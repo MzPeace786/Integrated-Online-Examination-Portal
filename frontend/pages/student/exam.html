@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Active Examination Session — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+  <style>
+    /* Fullscreen lockdown styles */
+    body { background: #fff; overflow: hidden; height: 100vh; user-select: none; }
+    .code-editor-box {
+      font-family: 'Courier New', monospace; font-size: 0.95rem;
+      background: #1E1B4B; color: #A5B4FC; border-radius: 8px;
+    }
+    .exam-topbar {
+      position: fixed; top: 0; left: 0; right: 0; height: 60px;
+      background: #0F172A; color: #fff; display: flex; align-items: center;
+      justify-content: space-between; padding: 0 16px; z-index: 1050;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    .exam-topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+    .exam-topbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .btn-submit-exam {
+      background: #DC2626 !important; color: #fff !important; font-weight: 700 !important;
+      border: none !important; border-radius: 6px !important; padding: 6px 16px !important;
+      font-size: 13px !important; display: inline-flex; align-items: center; gap: 6px;
+      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4) !important; flex-shrink: 0;
+    }
+    .btn-submit-exam:hover { background: #B91C1C !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <header class="exam-topbar">
+    <div class="exam-topbar-left">
+      <i class="bi bi-shield-check text-primary fs-5"></i>
+      <span id="examTitleText" class="fw-bold text-truncate" style="font-size: 15px;">Examination</span>
+    </div>
+
+    <div class="exam-topbar-right">
+      <!-- Camera indicator -->
+      <div id="cameraStatusIndicator" class="camera-indicator">
+        <span class="cam-dot"></span> Camera: Inactive
+      </div>
+
+      <!-- Risk score indicator -->
+      <div id="riskScoreDisplay"></div>
+
+      <!-- Countdown Timer -->
+      <div class="exam-timer" id="timerBox">00:00:00</div>
+
+      <!-- Prominent Topbar Submit Button -->
+      <button class="btn btn-submit-exam" onclick="confirmSubmitExam()">
+        <i class="bi bi-check-circle-fill"></i> Submit Exam
+      </button>
+    </div>
+  </header>
+
+  <!-- Exam Body: Two Column (70% Question, 30% Palette) -->
+  <div class="exam-body">
+    <!-- Question Area -->
+    <div class="exam-question-area" id="questionArea">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="question-number-display" id="questionNumberDisplay">Question 1 of --</span>
+        <span class="badge bg-light text-dark border" id="questionMarksBadge">Marks: 1.0</span>
+      </div>
+
+      <div class="question-text" id="questionText">Loading assessment questions...</div>
+
+      <!-- Dynamic Answer Container -->
+      <div id="answerOptionsContainer" class="mb-4"></div>
+
+      <!-- Action Buttons -->
+      <div class="exam-action-bar">
+        <button class="btn btn-outline-secondary btn-sm" onclick="clearCurrentAnswer()">
+          <i class="bi bi-eraser me-1"></i> Clear Answer
+        </button>
+        <button class="btn btn-outline-warning btn-sm" id="markReviewBtn" onclick="toggleMarkReview()">
+          <i class="bi bi-bookmark me-1"></i> Mark for Review
+        </button>
+        <button class="btn btn-primary btn-sm ms-auto px-4 fw-semibold" id="saveNextBtn" onclick="saveAndNext()" style="background:#4F46E5;">
+          Save & Next <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+      </div>
+
+      <div class="exam-nav-bar d-flex justify-content-between align-items-center mt-3 pt-2">
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-dark btn-sm px-3" id="prevQBtn" onclick="prevQuestion()">&larr; Previous</button>
+          <button class="btn btn-outline-dark btn-sm px-3" id="nextQBtn" onclick="nextQuestion()">Next &rarr;</button>
+        </div>
+        <button class="btn btn-outline-danger btn-sm px-3 fw-bold" onclick="confirmSubmitExam()">
+          <i class="bi bi-box-arrow-right me-1"></i> Submit Examination
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Side Question Navigation Palette -->
+    <div class="exam-nav-panel">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-bold text-dark mb-0">Question Palette</h6>
+        <span class="badge bg-secondary-subtle text-secondary" id="paletteCountBadge">0 / 0</span>
+      </div>
+      
+      <div class="q-nav-grid" id="questionNavGrid"></div>
+
+      <!-- Legend -->
+      <div class="border-top pt-3 mt-auto">
+        <div class="q-legend d-flex flex-column gap-2 mb-3">
+          <div class="q-legend-item"><span class="q-legend-dot bg-success"></span> Answered</div>
+          <div class="q-legend-item"><span class="q-legend-dot" style="background:#7C3AED;"></span> Marked for Review</div>
+          <div class="q-legend-item"><span class="q-legend-dot" style="background:#0891B2;"></span> Answered & Marked</div>
+          <div class="q-legend-item"><span class="q-legend-dot border" style="background:#fff;"></span> Not Answered</div>
+          <div class="q-legend-item"><span class="q-legend-dot bg-light border"></span> Not Visited</div>
+        </div>
+
+        <!-- Full-Width Bottom Palette Submit Button -->
+        <button class="btn btn-danger w-100 py-2 fw-bold shadow-sm" onclick="confirmSubmitExam()" style="border-radius: 8px;">
+          <i class="bi bi-check2-circle me-1"></i> Submit Assessment
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Draggable Webcam Preview Container -->
+  <div class="webcam-preview-container" id="proctorWebcamBox">
+    <video id="webcamPreview" autoplay playsinline muted></video>
+    <div class="webcam-preview-label">
+      <i class="bi bi-broadcast text-danger me-1"></i> Proctoring Active
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/exam-proctor.js"></script>
+  <script>
+    const user = Auth.requireAuth(['student']);
+    const examId = Utils.getQueryParam('id');
+
+    let attemptId = null;
+    let questions = [];
+    let currentIndex = 0;
+    let studentAnswers = {}; // qId => { selected_option_ids, text_answer, code_answer, language, is_marked_for_review }
+    let timerInterval = null;
+    let autoSaveInterval = null;
+
+    document.addEventListener('DOMContentLoaded', initExamSession);
+
+    async function initExamSession() {
+      if (!examId) {
+        window.location.href = '/exam-portal/frontend/pages/student/exams.html';
+        return;
+      }
+
+      Utils.showLoading('Initializing examination session...');
+
+      try {
+        const resp = await ExamPortalAPI.student.startExam(examId);
+        const data = resp.data;
+
+        attemptId = data.attempt_id;
+        questions = data.questions || [];
+        document.getElementById('examTitleText').textContent = data.exam.title;
+
+        // Restore any saved answers if resuming
+        if (data.saved_answers) {
+          data.saved_answers.forEach(a => {
+            studentAnswers[a.question_id] = {
+              selected_option_ids: a.selected_option_ids ? JSON.parse(a.selected_option_ids) : [],
+              text_answer: a.text_answer || '',
+              code_answer: a.code_answer || '',
+              language: a.language || 'python',
+              is_marked_for_review: a.is_marked_for_review == 1
+            };
+          });
+        }
+
+        // Start Countdown Timer
+        startExamTimer(data.time_remaining);
+
+        // Render Navigation Grid & Initial Question
+        renderQuestionNavGrid();
+        renderQuestion(0);
+
+        // Initialize Proctoring (if enabled)
+        if (data.exam.proctoring_enabled == 1) {
+          try {
+            await ExamProctor.init(attemptId, user.id, examId);
+          } catch (pe) {
+            console.warn('[ExamProctor] Non-fatal init warning:', pe);
+            ExamProctor.setupAntiCheat();
+          }
+        } else {
+          document.getElementById('proctorWebcamBox').style.display = 'none';
+          document.getElementById('cameraStatusIndicator').style.display = 'none';
+          ExamProctor.setupAntiCheat(); // Browser events still monitored
+        }
+
+        // Enforce Fullscreen
+        ExamProctor.enterFullscreen();
+
+        // Setup Auto-save interval every 30 seconds
+        autoSaveInterval = setInterval(autoSaveCurrent, 30000);
+
+      } catch (err) {
+        Utils.showToast(err.message || 'Could not start exam', 'error', 7000);
+        setTimeout(() => { window.location.href = '/exam-portal/frontend/pages/student/exams.html'; }, 2500);
+      } finally {
+        Utils.hideLoading();
+      }
+    }
+
+    function startExamTimer(secondsRemaining) {
+      let timeLeft = secondsRemaining;
+      const timerBox = document.getElementById('timerBox');
+
+      const tick = () => {
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          autoSubmitOnTimeUp();
+          return;
+        }
+
+        timerBox.textContent = Utils.formatTime(timeLeft);
+        if (timeLeft < 300) { // < 5 mins
+          timerBox.className = 'exam-timer timer-critical';
+        } else if (timeLeft < 600) { // < 10 mins
+          timerBox.className = 'exam-timer timer-warning';
+        }
+        timeLeft--;
+      };
+
+      tick();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function autoSubmitOnTimeUp() {
+      Utils.showToast('Time is up! Submitting examination automatically...', 'warning', 3000);
+      submitFinalExam(true);
+    }
+
+    function renderQuestionNavGrid() {
+      const grid = document.getElementById('questionNavGrid');
+      let answeredCount = 0;
+
+      grid.innerHTML = questions.map((q, idx) => {
+        let cls = 'not-visited';
+        const ans = studentAnswers[q.id];
+
+        if (ans) {
+          const hasAnswer = (ans.selected_option_ids && ans.selected_option_ids.length > 0) || ans.text_answer || ans.code_answer;
+          if (hasAnswer && ans.is_marked_for_review) { cls = 'answered-marked'; answeredCount++; }
+          else if (hasAnswer) { cls = 'answered'; answeredCount++; }
+          else if (ans.is_marked_for_review) cls = 'marked';
+          else cls = 'visited';
+        }
+
+        if (idx === currentIndex) cls += ' current';
+
+        return `<button class="q-nav-btn ${cls}" onclick="jumpToQuestion(${idx})">${idx + 1}</button>`;
+      }).join('');
+
+      const badge = document.getElementById('paletteCountBadge');
+      if (badge) badge.textContent = `${answeredCount} / ${questions.length}`;
+    }
+
+    function renderQuestion(index) {
+      if (index < 0 || index >= questions.length) return;
+      currentIndex = index;
+
+      const q = questions[currentIndex];
+      document.getElementById('questionNumberDisplay').textContent = `Question ${currentIndex + 1} of ${questions.length} (${q.question_type.toUpperCase()})`;
+      document.getElementById('questionMarksBadge').textContent = `Marks: ${q.marks}`;
+      document.getElementById('questionText').innerHTML = q.question_text;
+
+      // Mark review state
+      const ans = studentAnswers[q.id] || {};
+      const reviewBtn = document.getElementById('markReviewBtn');
+      if (ans.is_marked_for_review) {
+        reviewBtn.className = 'btn btn-warning btn-sm';
+        reviewBtn.innerHTML = '<i class="bi bi-bookmark-fill me-1"></i> Marked for Review';
+      } else {
+        reviewBtn.className = 'btn btn-outline-warning btn-sm';
+        reviewBtn.innerHTML = '<i class="bi bi-bookmark me-1"></i> Mark for Review';
+      }
+
+      // Save & Next vs Save & Submit button
+      const saveNextBtn = document.getElementById('saveNextBtn');
+      if (currentIndex === questions.length - 1) {
+        saveNextBtn.innerHTML = 'Save Answer <i class="bi bi-check-lg ms-1"></i>';
+      } else {
+        saveNextBtn.innerHTML = 'Save & Next <i class="bi bi-arrow-right ms-1"></i>';
+      }
+
+      // Render answer input based on type
+      const container = document.getElementById('answerOptionsContainer');
+      container.innerHTML = '';
+
+      if (q.question_type === 'mcq' || q.question_type === 'true_false') {
+        container.innerHTML = (q.options || []).map(opt => {
+          const isChecked = (ans.selected_option_ids || []).includes(opt.id);
+          return `
+            <label class="answer-option ${isChecked ? 'selected' : ''}" onclick="selectRadioOption(${opt.id})">
+              <input type="radio" name="optRadio" value="${opt.id}" ${isChecked ? 'checked' : ''}>
+              <div>${opt.option_text}</div>
+            </label>`;
+        }).join('');
+      } else if (q.question_type === 'multiple_correct') {
+        container.innerHTML = (q.options || []).map(opt => {
+          const isChecked = (ans.selected_option_ids || []).includes(opt.id);
+          return `
+            <label class="answer-option ${isChecked ? 'selected' : ''}" onclick="toggleCheckOption(${opt.id}, event)">
+              <input type="checkbox" name="optCheck" value="${opt.id}" ${isChecked ? 'checked' : ''}>
+              <div>${opt.option_text}</div>
+            </label>`;
+        }).join('');
+      } else if (q.question_type === 'fill_blank' || q.question_type === 'short_answer') {
+        container.innerHTML = `
+          <textarea class="form-control" rows="4" placeholder="Type your answer here..." oninput="updateTextAnswer(this.value)">${ans.text_answer || ''}</textarea>`;
+      } else if (q.question_type === 'coding') {
+        container.innerHTML = `
+          <div class="mb-2 d-flex justify-content-between align-items-center">
+            <select class="form-select form-select-sm w-auto" onchange="updateCodeLang(this.value)">
+              <option value="python" ${ans.language === 'python' ? 'selected' : ''}>Python 3</option>
+              <option value="javascript" ${ans.language === 'javascript' ? 'selected' : ''}>JavaScript (Node.js)</option>
+              <option value="php" ${ans.language === 'php' ? 'selected' : ''}>PHP 8</option>
+            </select>
+            <button class="btn btn-outline-primary btn-sm py-0" onclick="runCodeTest()">Run Tests</button>
+          </div>
+          <textarea class="form-control code-editor-box p-3" rows="8" placeholder="# Write your code solution here..." oninput="updateCodeAnswer(this.value)">${ans.code_answer || ''}</textarea>
+          <div id="codeOutputBox" class="mt-2 p-2 bg-light rounded border small d-none"></div>`;
+      }
+
+      // Prev / Next button state
+      document.getElementById('prevQBtn').disabled = (currentIndex === 0);
+      document.getElementById('nextQBtn').disabled = (currentIndex === questions.length - 1);
+
+      renderQuestionNavGrid();
+    }
+
+    function selectRadioOption(optId) {
+      const q = questions[currentIndex];
+      studentAnswers[q.id] = {
+        ...(studentAnswers[q.id] || {}),
+        selected_option_ids: [optId]
+      };
+      saveCurrentAnswerToServer();
+      renderQuestion(currentIndex);
+    }
+
+    function toggleCheckOption(optId, e) {
+      const q = questions[currentIndex];
+      const cur = studentAnswers[q.id]?.selected_option_ids || [];
+      const set = new Set(cur);
+      if (set.has(optId)) set.delete(optId);
+      else set.add(optId);
+
+      studentAnswers[q.id] = {
+        ...(studentAnswers[q.id] || {}),
+        selected_option_ids: Array.from(set)
+      };
+      saveCurrentAnswerToServer();
+      renderQuestion(currentIndex);
+    }
+
+    function updateTextAnswer(val) {
+      const q = questions[currentIndex];
+      studentAnswers[q.id] = { ...(studentAnswers[q.id] || {}), text_answer: val };
+    }
+
+    function updateCodeAnswer(val) {
+      const q = questions[currentIndex];
+      studentAnswers[q.id] = { ...(studentAnswers[q.id] || {}), code_answer: val };
+    }
+
+    function updateCodeLang(lang) {
+      const q = questions[currentIndex];
+      studentAnswers[q.id] = { ...(studentAnswers[q.id] || {}), language: lang };
+    }
+
+    async function runCodeTest() {
+      const q = questions[currentIndex];
+      const ans = studentAnswers[q.id] || {};
+      const outBox = document.getElementById('codeOutputBox');
+      outBox.className = 'mt-2 p-2 bg-light rounded border small';
+      outBox.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Executing against test cases...';
+      outBox.classList.remove('d-none');
+
+      try {
+        const resp = await fetch('/exam-portal/backend/api/code/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Auth.getToken()}` },
+          body: JSON.stringify({ language: ans.language || 'python', code: ans.code_answer || '', question_id: q.id })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          const res = data.data;
+          outBox.innerHTML = `<strong>Tests Passed:</strong> ${res.passed_tests} / ${res.total_tests} (Score: ${res.earned_score})`;
+        } else {
+          outBox.innerHTML = `<span class="text-danger">Execution error: ${data.message}</span>`;
+        }
+      } catch (err) {
+        outBox.innerHTML = `<span class="text-danger">${err.message}</span>`;
+      }
+    }
+
+    function clearCurrentAnswer() {
+      const q = questions[currentIndex];
+      delete studentAnswers[q.id];
+      saveCurrentAnswerToServer();
+      renderQuestion(currentIndex);
+    }
+
+    function toggleMarkReview() {
+      const q = questions[currentIndex];
+      const cur = studentAnswers[q.id] || {};
+      cur.is_marked_for_review = !cur.is_marked_for_review;
+      studentAnswers[q.id] = cur;
+      saveCurrentAnswerToServer();
+      renderQuestion(currentIndex);
+    }
+
+    function jumpToQuestion(idx) {
+      saveCurrentAnswerToServer();
+      renderQuestion(idx);
+    }
+
+    function prevQuestion() {
+      if (currentIndex > 0) jumpToQuestion(currentIndex - 1);
+    }
+
+    function nextQuestion() {
+      if (currentIndex < questions.length - 1) jumpToQuestion(currentIndex + 1);
+    }
+
+    function saveAndNext() {
+      saveCurrentAnswerToServer();
+      if (currentIndex < questions.length - 1) {
+        renderQuestion(currentIndex + 1);
+      } else {
+        Utils.showToast('Answer saved! You are on the last question. Click "Submit Exam" when ready.', 'info', 3000);
+      }
+    }
+
+    function autoSaveCurrent() {
+      saveCurrentAnswerToServer();
+    }
+
+    async function saveCurrentAnswerToServer() {
+      const q = questions[currentIndex];
+      if (!q || !attemptId) return;
+
+      const ans = studentAnswers[q.id] || {};
+      try {
+        await ExamPortalAPI.student.saveAnswer(attemptId, {
+          question_id: q.id,
+          selected_option_ids: ans.selected_option_ids || null,
+          text_answer: ans.text_answer || null,
+          code_answer: ans.code_answer || null,
+          language: ans.language || null,
+          is_marked_for_review: ans.is_marked_for_review ? 1 : 0
+        });
+      } catch (_) {}
+    }
+
+    function confirmSubmitExam() {
+      const answeredCount = Object.values(studentAnswers).filter(a => (a.selected_option_ids && a.selected_option_ids.length > 0) || a.text_answer || a.code_answer).length;
+      const totalCount = questions.length;
+
+      Utils.showConfirm(
+        'Submit Final Examination?',
+        `You have answered ${answeredCount} of ${totalCount} questions.\n\nAre you sure you want to finalize and submit your assessment? Once submitted, answers cannot be modified.`,
+        () => submitFinalExam(false)
+      );
+    }
+
+    window.submitFinalExam = async function(auto = false, malpracticeReason = null) {
+      clearInterval(timerInterval);
+      clearInterval(autoSaveInterval);
+      Utils.showLoading(malpracticeReason ? 'Locking examination due to malpractice violation...' : 'Submitting examination and computing results...');
+
+      try {
+        // Stop proctoring webcam
+        await ExamProctor.stop();
+
+        const resp = await ExamPortalAPI.student.submitExam(attemptId, { 
+          auto_submit: auto ? 1 : 0,
+          malpractice_terminated: malpracticeReason ? 1 : 0,
+          malpractice_reason: malpracticeReason
+        });
+        if (resp.success) {
+          const reasonParam = malpracticeReason ? `&malpractice=${encodeURIComponent(malpracticeReason)}` : '';
+          window.location.href = `/exam-portal/frontend/pages/student/result.html?id=${resp.data.result_id}${reasonParam}`;
+        }
+      } catch (err) {
+        Utils.showToast(err.message || 'Submission error', 'error');
+        Utils.hideLoading();
+      }
+    };
+  </script>
+</body>
+</html>

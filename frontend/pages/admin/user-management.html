@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title">User Account Directory</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/admin/dashboard.html">Admin</a></li>
+              <li class="breadcrumb-item active">Users</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm px-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#createUserModal" style="background:#4F46E5;">
+        <i class="bi bi-person-plus-fill me-1"></i> Add User
+      </button>
+    </header>
+
+    <div class="content-area">
+      <!-- Users Table -->
+      <div class="ep-card">
+        <div class="ep-card-header">
+          <h5 class="ep-card-title">System Users & Roles</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="ep-table mb-0">
+            <thead>
+              <tr>
+                <th>User Name</th>
+                <th>Email Address</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody">
+              <tr><td colspan="6" class="text-center py-4 text-muted small">Loading user directory...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Create User Modal -->
+  <div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="createUserForm">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Provision New User Account</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Role</label>
+              <select id="newRole" class="form-select" required>
+                <option value="student">Student / Candidate</option>
+                <option value="examiner">Examiner / Faculty</option>
+                <option value="admin">System Administrator</option>
+              </select>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label">First Name</label>
+                <input type="text" id="newFirstName" class="form-control" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Last Name</label>
+                <input type="text" id="newLastName" class="form-control" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="newEmail" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Temporary Password</label>
+              <input type="text" id="newPassword" class="form-control font-monospace" value="Temp@123!" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm" style="background:#4F46E5;">Create Account</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['admin']);
+    Sidebar.load('admin', 'users');
+
+    document.addEventListener('DOMContentLoaded', loadUsers);
+
+    async function loadUsers() {
+      try {
+        const resp = await ExamPortalAPI.admin.getUsers();
+        const tbody = document.getElementById('usersTbody');
+
+        tbody.innerHTML = resp.data.map(u => `
+          <tr>
+            <td class="fw-semibold text-dark">${u.first_name || ''} ${u.last_name || ''}</td>
+            <td><code>${u.email}</code></td>
+            <td><span class="badge ${u.role === 'admin' ? 'bg-purple' : (u.role === 'examiner' ? 'bg-primary' : 'bg-secondary')}" style="${u.role === 'admin' ? 'background:#7C3AED;' : ''}">${u.role.toUpperCase()}</span></td>
+            <td>${u.is_active == 1 ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Deactivated</span>'}</td>
+            <td class="small text-muted">${Utils.formatDate(u.created_at)}</td>
+            <td>
+              <button class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size:0.75rem;" onclick="deactivateUser(${u.id})">
+                ${u.is_active == 1 ? 'Deactivate' : 'Enable'}
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        Utils.showToast(err.message || 'Error loading users', 'error');
+      }
+    }
+
+    async function deactivateUser(id) {
+      try {
+        await ExamPortalAPI.admin.deleteUser(id);
+        Utils.showToast('User state updated', 'success');
+        loadUsers();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error updating user', 'error');
+      }
+    }
+
+    document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await ExamPortalAPI.admin.createUser({
+          role: document.getElementById('newRole').value,
+          first_name: document.getElementById('newFirstName').value.trim(),
+          last_name: document.getElementById('newLastName').value.trim(),
+          email: document.getElementById('newEmail').value.trim(),
+          password: document.getElementById('newPassword').value
+        });
+        Utils.showToast('User created successfully!', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
+        loadUsers();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error creating user', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

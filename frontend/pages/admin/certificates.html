@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificate Ledger — ExamPortal Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title d-flex align-items-center gap-2">
+            <i class="bi bi-award-fill text-warning"></i>
+            <span>Certificate Audit Ledger</span>
+          </h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/admin/dashboard.html">Admin</a></li>
+              <li class="breadcrumb-item active">Certificate Ledger</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/exam-portal/frontend/pages/verify-certificate.html" target="_blank" class="btn btn-outline-primary btn-sm fw-semibold">
+          <i class="bi bi-qr-code-scan me-1"></i> Public Verification Portal
+        </a>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- Top Metrics Grid -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+          <div class="stat-card">
+            <div class="stat-card-icon"><i class="bi bi-award-fill"></i></div>
+            <div class="stat-card-value" id="statTotalCerts">0</div>
+            <div class="stat-card-label">Total Certificates Issued</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4">
+          <div class="stat-card success">
+            <div class="stat-card-icon"><i class="bi bi-patch-check-fill"></i></div>
+            <div class="stat-card-value" id="statActiveCerts">0</div>
+            <div class="stat-card-label">Verified & Valid</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4">
+          <div class="stat-card danger">
+            <div class="stat-card-icon"><i class="bi bi-slash-circle-fill"></i></div>
+            <div class="stat-card-value" id="statRevokedCerts">0</div>
+            <div class="stat-card-label">Revoked Credentials</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters & Search Toolbar -->
+      <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-5">
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" id="searchCertInput" class="form-control bg-light border-start-0" placeholder="Search by certificate #, student name, or roll..." oninput="filterCerts()">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <select id="certStatusFilterSelect" class="form-select bg-light" onchange="filterCerts()">
+              <option value="">All Credential Statuses</option>
+              <option value="valid">Valid / Active Only</option>
+              <option value="revoked">Revoked Only</option>
+            </select>
+          </div>
+          <div class="col-md-3 text-md-end">
+            <button class="btn btn-outline-secondary btn-sm w-100" onclick="loadCertificates()">
+              <i class="bi bi-arrow-clockwise me-1"></i> Refresh Ledger
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Certificates Table -->
+      <div class="ep-card">
+        <div class="ep-card-header d-flex justify-content-between align-items-center">
+          <h5 class="ep-card-title mb-0">Issued Digital Credentials</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="ep-table mb-0">
+            <thead>
+              <tr>
+                <th>Certificate Number</th>
+                <th>Candidate Name</th>
+                <th>Examination Title</th>
+                <th>Performance Score</th>
+                <th>Date Issued</th>
+                <th>Status</th>
+                <th>Audit & Actions</th>
+              </tr>
+            </thead>
+            <tbody id="certsTbody">
+              <tr><td colspan="7" class="text-center py-4 text-muted small">Loading certificate ledger...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Revoke Modal -->
+  <div class="modal fade" id="revokeModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Revoke Credential</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <input type="hidden" id="revokeCertId">
+          <p class="text-muted small">Revoking this certificate will invalidate its QR code verification URL and reflect on public verification inquiries.</p>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Reason for Revocation <span class="text-danger">*</span></label>
+            <textarea id="revokeReasonInput" class="form-control" rows="3" placeholder="e.g. Identity discrepancy, academic integrity infraction, proctoring violation..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger btn-sm px-4 fw-semibold" onclick="confirmRevoke()">Revoke Certificate</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['admin']);
+    Sidebar.load('admin', 'certificates');
+
+    let allCerts = [];
+    let revokeModalInstance = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      revokeModalInstance = new bootstrap.Modal(document.getElementById('revokeModal'));
+      loadCertificates();
+    });
+
+    async function loadCertificates() {
+      try {
+        const resp = await ExamPortalAPI.admin.getCertificates();
+        allCerts = resp.data || [];
+
+        // Compute metrics
+        document.getElementById('statTotalCerts').textContent = allCerts.length;
+        const revoked = allCerts.filter(c => c.revoked_at !== null).length;
+        const active = allCerts.length - revoked;
+        document.getElementById('statActiveCerts').textContent = active;
+        document.getElementById('statRevokedCerts').textContent = revoked;
+
+        filterCerts();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error loading certificates', 'error');
+      }
+    }
+
+    function filterCerts() {
+      const q = document.getElementById('searchCertInput').value.toLowerCase().trim();
+      const status = document.getElementById('certStatusFilterSelect').value;
+
+      const filtered = allCerts.filter(c => {
+        const matchesQ = !q || 
+          (c.certificate_number && c.certificate_number.toLowerCase().includes(q)) || 
+          (c.student_name && c.student_name.toLowerCase().includes(q)) || 
+          (c.student_id_number && c.student_id_number.toLowerCase().includes(q)) ||
+          (c.exam_name && c.exam_name.toLowerCase().includes(q));
+
+        let matchesStatus = true;
+        if (status === 'valid') matchesStatus = (c.revoked_at === null);
+        if (status === 'revoked') matchesStatus = (c.revoked_at !== null);
+
+        return matchesQ && matchesStatus;
+      });
+
+      renderCertsTable(filtered);
+    }
+
+    function renderCertsTable(list) {
+      const tbody = document.getElementById('certsTbody');
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No certificates match your search criteria.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(c => {
+        const isRevoked = (c.revoked_at !== null);
+        const statusBadge = isRevoked 
+          ? `<span class="badge bg-danger" title="${c.revoke_reason || 'Revoked'}"><i class="bi bi-x-circle me-1"></i>REVOKED</span>` 
+          : `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>VALID</span>`;
+
+        return `
+          <tr>
+            <td>
+              <strong class="font-monospace text-primary">${c.certificate_number}</strong>
+              <div class="small"><a href="/exam-portal/frontend/pages/verify-certificate.html?cert=${encodeURIComponent(c.certificate_number)}" target="_blank" class="text-muted text-decoration-none"><i class="bi bi-box-arrow-up-right me-1"></i>Verify</a></div>
+            </td>
+            <td>
+              <strong class="text-dark">${c.student_name}</strong>
+              <div class="small text-muted font-monospace">${c.student_id_number || ''}</div>
+            </td>
+            <td>
+              <div>${c.exam_name}</div>
+            </td>
+            <td>
+              <strong class="text-success">${parseFloat(c.percentage || 0).toFixed(1)}%</strong>
+              <div class="small text-muted">${parseFloat(c.obtained_marks || 0)} / ${parseFloat(c.total_marks || 0)} marks</div>
+            </td>
+            <td class="small text-muted">${Utils.formatDateTime(c.issued_at)}</td>
+            <td>${statusBadge}</td>
+            <td>
+              <div class="d-flex gap-2">
+                <a href="/exam-portal/frontend/pages/verify-certificate.html?cert=${encodeURIComponent(c.certificate_number)}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2" title="Inspect / View Certificate">
+                  <i class="bi bi-eye"></i> View
+                </a>
+                ${!isRevoked ? `
+                  <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="openRevokeModal(${c.id})" title="Revoke Certificate">
+                    <i class="bi bi-slash-circle"></i> Revoke
+                  </button>
+                ` : `
+                  <button class="btn btn-sm btn-outline-success py-0 px-2" onclick="reinstateCert(${c.id})" title="Reinstate / Restore Certificate">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reinstate
+                  </button>
+                `}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openRevokeModal(certId) {
+      document.getElementById('revokeCertId').value = certId;
+      document.getElementById('revokeReasonInput').value = '';
+      revokeModalInstance.show();
+    }
+
+    async function confirmRevoke() {
+      const id = document.getElementById('revokeCertId').value;
+      const reason = document.getElementById('revokeReasonInput').value.trim() || 'Revoked by system administrator';
+
+      try {
+        await ExamPortalAPI.admin.revokeCertificate(id, { reason });
+        Utils.showToast('Certificate successfully revoked', 'success');
+        revokeModalInstance.hide();
+        await loadCertificates();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error revoking certificate', 'error');
+      }
+    }
+
+    async function reinstateCert(certId) {
+      if (!confirm('Re-validate and reinstate this certificate?')) return;
+      try {
+        // Call put restore
+        const res = await fetch(`/exam-portal/backend/api/admin/certificates/${certId}/restore`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${Auth.getToken()}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          Utils.showToast('Certificate reinstated successfully', 'success');
+          await loadCertificates();
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (err) {
+        Utils.showToast(err.message || 'Error reinstating certificate', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

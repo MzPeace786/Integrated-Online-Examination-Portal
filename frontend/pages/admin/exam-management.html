@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Examinations — ExamPortal Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title d-flex align-items-center gap-2">
+            <i class="bi bi-journal-album text-primary"></i>
+            <span>All Examinations</span>
+          </h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/admin/dashboard.html">Admin</a></li>
+              <li class="breadcrumb-item active">Examinations</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/exam-portal/frontend/pages/admin/live-proctoring.html" class="btn btn-outline-danger btn-sm fw-semibold">
+          <i class="bi bi-broadcast me-1"></i> Live Proctoring Monitor
+        </a>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- Top Metrics Grid -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-card-icon"><i class="bi bi-journals"></i></div>
+            <div class="stat-card-value" id="statTotalExams">0</div>
+            <div class="stat-card-label">Total Examinations</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card success">
+            <div class="stat-card-icon"><i class="bi bi-play-circle-fill"></i></div>
+            <div class="stat-card-value" id="statActiveExams">0</div>
+            <div class="stat-card-label">Active / Live Now</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card info">
+            <div class="stat-card-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-card-value" id="statSubmissions">0</div>
+            <div class="stat-card-label">Total Submissions</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card warning">
+            <div class="stat-card-icon"><i class="bi bi-shield-lock-fill"></i></div>
+            <div class="stat-card-value" id="statProctorExams">0</div>
+            <div class="stat-card-label">Proctoring Enforced</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters & Search Toolbar -->
+      <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-5">
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" id="searchExamInput" class="form-control bg-light border-start-0" placeholder="Search exams by title or examiner..." oninput="filterExams()">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <select id="statusFilterSelect" class="form-select bg-light" onchange="filterExams()">
+              <option value="">All Lifecycle Statuses</option>
+              <option value="active">Active / In Progress</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="completed">Completed</option>
+              <option value="draft">Draft</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="col-md-3 text-md-end">
+            <button class="btn btn-outline-secondary btn-sm w-100" onclick="loadExams()">
+              <i class="bi bi-arrow-clockwise me-1"></i> Refresh List
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Examinations Table -->
+      <div class="ep-card">
+        <div class="ep-card-header d-flex justify-content-between align-items-center">
+          <h5 class="ep-card-title mb-0">Institutional Examination Registry</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="ep-table mb-0">
+            <thead>
+              <tr>
+                <th>Exam Title</th>
+                <th>Subject Domain</th>
+                <th>Examiner</th>
+                <th>Schedule & Duration</th>
+                <th>Submissions</th>
+                <th>AI Proctoring</th>
+                <th>Status</th>
+                <th>Admin Actions</th>
+              </tr>
+            </thead>
+            <tbody id="examsTbody">
+              <tr><td colspan="8" class="text-center py-4 text-muted small">Loading examinations...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Edit Exam Status Modal -->
+  <div class="modal fade" id="editExamModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold" id="modalExamTitle">Manage Examination</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <input type="hidden" id="editExamId">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Lifecycle Status</label>
+            <select id="editExamStatus" class="form-select">
+              <option value="scheduled">Scheduled</option>
+              <option value="active">Active (Candidates can take now)</option>
+              <option value="completed">Completed (Evaluation closed)</option>
+              <option value="draft">Draft (Hidden from students)</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">AI Webcam Proctoring</label>
+            <div class="form-check form-switch mt-1">
+              <input class="form-check-input" type="checkbox" id="editExamProctoring">
+              <label class="form-check-label" for="editExamProctoring">Enforce AI OpenCV Proctoring & Strike Detection</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="saveExamChanges()" style="background:#4F46E5;">Apply Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['admin']);
+    Sidebar.load('admin', 'exams');
+
+    let allExams = [];
+    let editModal = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      editModal = new bootstrap.Modal(document.getElementById('editExamModal'));
+      loadExams();
+    });
+
+    async function loadExams() {
+      try {
+        const resp = await ExamPortalAPI.admin.getExams();
+        allExams = resp.data || [];
+
+        // Compute metrics
+        document.getElementById('statTotalExams').textContent = allExams.length;
+        document.getElementById('statActiveExams').textContent = allExams.filter(e => e.status === 'active').length;
+        const totalSub = allExams.reduce((sum, e) => sum + (parseInt(e.submitted_count) || 0), 0);
+        document.getElementById('statSubmissions').textContent = totalSub;
+        document.getElementById('statProctorExams').textContent = allExams.filter(e => e.proctoring_enabled == 1).length;
+
+        filterExams();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error loading exams', 'error');
+      }
+    }
+
+    function filterExams() {
+      const q = document.getElementById('searchExamInput').value.toLowerCase().trim();
+      const status = document.getElementById('statusFilterSelect').value;
+
+      const filtered = allExams.filter(e => {
+        const matchesQ = !q || (e.title && e.title.toLowerCase().includes(q)) || (e.examiner_name && e.examiner_name.toLowerCase().includes(q));
+        const matchesStatus = !status || (e.status === status);
+        return matchesQ && matchesStatus;
+      });
+
+      renderExamsTable(filtered);
+    }
+
+    function renderExamsTable(list) {
+      const tbody = document.getElementById('examsTbody');
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">No examinations match your filter.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(e => {
+        let statusBadge = '';
+        if (e.status === 'active') statusBadge = '<span class="badge bg-success">ACTIVE</span>';
+        else if (e.status === 'scheduled') statusBadge = '<span class="badge bg-primary">SCHEDULED</span>';
+        else if (e.status === 'completed') statusBadge = '<span class="badge bg-secondary">COMPLETED</span>';
+        else if (e.status === 'cancelled') statusBadge = '<span class="badge bg-danger">CANCELLED</span>';
+        else statusBadge = '<span class="badge bg-warning text-dark">DRAFT</span>';
+
+        return `
+          <tr>
+            <td>
+              <strong class="text-dark">${e.title}</strong>
+              <div class="small text-muted">${e.total_questions || 0} Questions &bull; ${e.total_marks || 0} Marks</div>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border">${e.subject_name || 'General'}</span>
+            </td>
+            <td>
+              <div>${e.examiner_name || 'System'}</div>
+              <small class="text-muted">${e.examiner_email || ''}</small>
+            </td>
+            <td class="small">
+              <div><i class="bi bi-clock me-1 text-muted"></i>${e.duration_minutes} mins</div>
+              <div class="text-muted">${Utils.formatDateTime(e.start_datetime)}</div>
+            </td>
+            <td>
+              <strong class="text-primary">${e.submitted_count || 0}</strong> / ${e.enrolled_count || 0} candidates
+              ${e.avg_percentage ? `<div class="small text-success">Avg: ${e.avg_percentage}%</div>` : ''}
+            </td>
+            <td>
+              ${e.proctoring_enabled == 1 
+                ? '<span class="badge bg-danger-subtle text-danger border border-danger"><i class="bi bi-camera-video-fill me-1"></i>Enforced</span>' 
+                : '<span class="badge bg-light text-muted border">Disabled</span>'}
+            </td>
+            <td>${statusBadge}</td>
+            <td>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary py-1 px-2" onclick="openEditModal(${e.id})" title="Manage Status">
+                  <i class="bi bi-gear-fill"></i> Manage
+                </button>
+                <a href="/exam-portal/frontend/pages/admin/results.html?exam_id=${e.id}" class="btn btn-sm btn-outline-secondary py-1 px-2" title="View Results">
+                  <i class="bi bi-card-checklist"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openEditModal(examId) {
+      const exam = allExams.find(e => e.id == examId);
+      if (!exam) return;
+
+      document.getElementById('editExamId').value = exam.id;
+      document.getElementById('modalExamTitle').textContent = `Manage: ${exam.title}`;
+      document.getElementById('editExamStatus').value = exam.status;
+      document.getElementById('editExamProctoring').checked = (exam.proctoring_enabled == 1);
+      editModal.show();
+    }
+
+    async function saveExamChanges() {
+      const examId = document.getElementById('editExamId').value;
+      const status = document.getElementById('editExamStatus').value;
+      const proctoring = document.getElementById('editExamProctoring').checked ? 1 : 0;
+
+      try {
+        await ExamPortalAPI.admin.updateExam(examId, {
+          status: status,
+          proctoring_enabled: proctoring
+        });
+        Utils.showToast('Examination updated successfully!', 'success');
+        editModal.hide();
+        await loadExams();
+      } catch (err) {
+        // Fallback using direct put if updateExam is not on api.js
+        try {
+          await ExamPortalAPI.examiner.updateExam(examId, { status, proctoring_enabled: proctoring });
+          Utils.showToast('Examination updated!', 'success');
+          editModal.hide();
+          await loadExams();
+        } catch (e2) {
+          Utils.showToast(err.message || 'Error updating exam', 'error');
+        }
+      }
+    }
+  </script>
+</body>
+</html>

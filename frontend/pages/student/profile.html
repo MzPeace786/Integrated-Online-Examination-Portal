@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Candidate Profile — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title">Candidate Profile</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/student/dashboard.html">Dashboard</a></li>
+              <li class="breadcrumb-item active">Profile</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-area max-w-900 mx-auto">
+      <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+        <form id="profileForm">
+          <div class="d-flex align-items-center gap-4 mb-4 pb-4 border-bottom">
+            <div class="stat-card-icon rounded-circle mb-0" style="width:72px; height:72px; font-size:2rem;">
+              <i class="bi bi-person-fill"></i>
+            </div>
+            <div>
+              <h4 class="fw-bold text-dark mb-0" id="profDisplayName">Candidate Name</h4>
+              <div class="text-muted small" id="profEmail">user@university.edu</div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">First Name</label>
+              <input type="text" id="profFirstName" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Last Name</label>
+              <input type="text" id="profLastName" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Student ID / Roll Number</label>
+              <input type="text" id="profStudentId" class="form-control" readonly disabled>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" id="profPhone" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Department</label>
+              <input type="text" id="profDept" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Semester</label>
+              <select id="profSemester" class="form-select">
+                <option value="1">1</option><option value="2">2</option>
+                <option value="3">3</option><option value="4">4</option>
+                <option value="5">5</option><option value="6">6</option>
+                <option value="7">7</option><option value="8">8</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Institution / College</label>
+              <input type="text" id="profInstitution" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Bio / Academic Interests</label>
+              <textarea id="profBio" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary px-4 fw-semibold" style="background:#4F46E5;">
+              Save Profile Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['student']);
+    Sidebar.load('student', 'profile');
+
+    document.addEventListener('DOMContentLoaded', loadProfile);
+
+    async function loadProfile() {
+      try {
+        const resp = await ExamPortalAPI.student.getProfile();
+        const p = resp.data;
+
+        document.getElementById('profDisplayName').textContent = `${p.first_name} ${p.last_name}`;
+        document.getElementById('profEmail').textContent = p.email;
+        document.getElementById('profFirstName').value = p.first_name || '';
+        document.getElementById('profLastName').value = p.last_name || '';
+        document.getElementById('profStudentId').value = p.student_id_number || 'N/A';
+        document.getElementById('profPhone').value = p.phone || '';
+        document.getElementById('profDept').value = p.department || '';
+        document.getElementById('profSemester').value = p.semester || 7;
+        document.getElementById('profInstitution').value = p.institution || '';
+        document.getElementById('profBio').value = p.bio || '';
+      } catch (err) {
+        Utils.showToast(err.message || 'Error loading profile', 'error');
+      }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await ExamPortalAPI.student.updateProfile({
+          first_name: document.getElementById('profFirstName').value.trim(),
+          last_name: document.getElementById('profLastName').value.trim(),
+          phone: document.getElementById('profPhone').value.trim(),
+          department: document.getElementById('profDept').value.trim(),
+          semester: document.getElementById('profSemester').value,
+          institution: document.getElementById('profInstitution').value.trim(),
+          bio: document.getElementById('profBio').value.trim()
+        });
+        Utils.showToast('Profile updated successfully!', 'success');
+      } catch (err) {
+        Utils.showToast(err.message || 'Error updating profile', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

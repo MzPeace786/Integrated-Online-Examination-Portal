@@ -1,0 +1,10 @@
+RewriteEngine On
+RewriteBase /exam-portal/backend/api/
+
+# Pass Authorization Header to PHP
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
+# If the requested URL is not an actual file or directory, forward to index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]

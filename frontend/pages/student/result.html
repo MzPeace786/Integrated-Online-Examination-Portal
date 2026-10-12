@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Examination Result & Scorecard — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body class="bg-light d-flex flex-column min-vh-100">
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <a href="/exam-portal/frontend/pages/student/dashboard.html" class="btn btn-outline-secondary btn-sm"><i class="bi bi-house-door"></i></a>
+        <div>
+          <h1 class="page-title">Examination Scorecard & Analysis</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/student/dashboard.html">Dashboard</a></li>
+              <li class="breadcrumb-item active">Result</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-area max-w-900 mx-auto">
+      <!-- Result Banner -->
+      <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" id="resultCardHeader">
+        <div class="p-4 text-white d-flex flex-wrap justify-content-between align-items-center gap-3" id="bannerBg" style="background:#059669;">
+          <div>
+            <span class="badge bg-white text-dark px-3 py-1 rounded-pill mb-2 fw-semibold" id="resultStatusBadge">PASSED</span>
+            <h2 class="fw-bold mb-1" id="examTitle">Examination Scorecard</h2>
+            <div class="small opacity-75" id="examSubject">Subject: Computer Science</div>
+          </div>
+          <div class="text-lg-end">
+            <div class="display-5 fw-bold" id="obtainedPercentage">--%</div>
+            <div class="small opacity-75">Score: <span id="scoreText">-- / --</span></div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-white">
+          <div class="row g-3 text-center">
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3">
+                <div class="text-muted small">Total Questions</div>
+                <div class="fw-bold fs-4 text-dark" id="statTotalQ">--</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3">
+                <div class="text-muted small">Correct Answers</div>
+                <div class="fw-bold fs-4 text-success" id="statCorrect">--</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3">
+                <div class="text-muted small">Incorrect Answers</div>
+                <div class="fw-bold fs-4 text-danger" id="statIncorrect">--</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3">
+                <div class="text-muted small">Time Taken</div>
+                <div class="fw-bold fs-4 text-primary" id="statTimeTaken">--:--</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top" id="certActionGroup">
+            <div class="text-muted small" id="certSerialText"></div>
+            <div class="d-flex gap-2">
+              <a id="downloadCertBtn" href="#" target="_blank" class="btn btn-success btn-sm px-3 fw-semibold d-none">
+                <i class="bi bi-award me-1"></i> Download Certificate
+              </a>
+              <a href="/exam-portal/frontend/pages/student/dashboard.html" class="btn btn-outline-primary btn-sm px-3">
+                Back to Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Question by Question Breakdown -->
+      <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-list-check text-primary me-2"></i>Detailed Question Review</h5>
+        <div id="answerAnalysisContainer" class="d-flex flex-column gap-3">
+          <div class="text-center py-4 text-muted small">Loading question analysis...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['student']);
+    Sidebar.load('student', 'exams');
+
+    const resultId = Utils.getQueryParam('id');
+    document.addEventListener('DOMContentLoaded', loadResultDetails);
+
+    async function loadResultDetails() {
+      if (!resultId) {
+        window.location.href = '/exam-portal/frontend/pages/student/history.html';
+        return;
+      }
+
+      try {
+        const resp = await ExamPortalAPI.student.getResult(resultId);
+        const res = resp.data.result;
+        const analysis = resp.data.answer_analysis || [];
+        const cert = resp.data.certificate;
+
+        document.getElementById('examTitle').textContent = res.exam_title;
+        document.getElementById('examSubject').textContent = `Subject: ${res.subject_name || 'General'}`;
+        document.getElementById('obtainedPercentage').textContent = `${res.percentage}%`;
+        document.getElementById('scoreText').textContent = `${res.obtained_marks} / ${res.total_marks}`;
+        document.getElementById('statTotalQ').textContent = res.total_questions;
+        document.getElementById('statCorrect').textContent = res.correct_answers;
+        document.getElementById('statIncorrect').textContent = res.incorrect_answers;
+        document.getElementById('statTimeTaken').textContent = Utils.formatTime(res.time_taken_seconds || 0);
+
+        const malpractice = Utils.getQueryParam('malpractice');
+        if (malpractice) {
+          document.getElementById('bannerBg').style.background = '#991B1B';
+          document.getElementById('resultStatusBadge').className = 'badge bg-danger text-white px-3 py-1 rounded-pill mb-2 fw-semibold';
+          document.getElementById('resultStatusBadge').textContent = 'DISQUALIFIED / MALPRACTICE';
+          
+          let alertBox = document.createElement('div');
+          alertBox.className = 'alert alert-danger d-flex align-items-center gap-3 mb-4 rounded-4 shadow-sm border-danger';
+          alertBox.innerHTML = `
+            <i class="bi bi-shield-slash-fill fs-1 text-danger"></i>
+            <div>
+              <h5 class="fw-bold mb-1">Examination Terminated for Proctoring Malpractice</h5>
+              <p class="mb-0 small">Reason: <strong>${decodeURIComponent(malpractice)}</strong>. This assessment was automatically terminated and submitted by OpenCV AI Proctoring. A disciplinary report with snapshot logs has been logged for academic review.</p>
+            </div>
+          `;
+          document.querySelector('.content-area').prepend(alertBox);
+        } else if (!res.is_passed) {
+          document.getElementById('bannerBg').style.background = '#DC2626';
+          document.getElementById('resultStatusBadge').textContent = 'FAILED';
+        }
+
+        if (cert && !malpractice) {
+          document.getElementById('certSerialText').innerHTML = `<strong>Certificate Issued:</strong> ${cert.certificate_number}`;
+          const btn = document.getElementById('downloadCertBtn');
+          const token = Auth.getToken();
+          btn.href = `/exam-portal/backend/api/student/certificates/${cert.id || resultId}/download?token=${encodeURIComponent(token)}`;
+          btn.classList.remove('d-none');
+        }
+
+        // Render question breakdown
+        const container = document.getElementById('answerAnalysisContainer');
+        container.innerHTML = analysis.map((q, idx) => {
+          const isCorrect = (q.status === 'correct');
+          const borderCls = isCorrect ? 'border-success-subtle bg-success-subtle' : 'border-danger-subtle bg-danger-subtle';
+          const icon = isCorrect ? '<i class="bi bi-check-circle-fill text-success fs-5"></i>' : '<i class="bi bi-x-circle-fill text-danger fs-5"></i>';
+
+          return `
+            <div class="p-3 rounded-3 border ${borderCls} bg-opacity-25">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex align-items-center gap-2">
+                  ${icon}
+                  <span class="fw-bold small text-dark">Q${idx + 1}: ${q.question_text}</span>
+                </div>
+                <span class="badge ${isCorrect ? 'bg-success' : 'bg-danger'}">${q.marks_earned} / ${q.marks} Marks</span>
+              </div>
+              ${q.explanation ? `<div class="small text-muted mt-2 pt-2 border-top"><strong>Explanation:</strong> ${q.explanation}</div>` : ''}
+            </div>`;
+        }).join('');
+
+      } catch (err) {
+        Utils.showToast(err.message || 'Error loading result scorecard', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

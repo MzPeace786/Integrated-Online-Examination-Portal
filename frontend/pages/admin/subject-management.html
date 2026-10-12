@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Courses & Subjects — ExamPortal Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+  <style>
+    .nav-pills .nav-link {
+      color: #64748B;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .nav-pills .nav-link.active {
+      background: #4F46E5;
+      color: #FFFFFF;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title d-flex align-items-center gap-2">
+            <i class="bi bi-book-half text-primary"></i>
+            <span>Courses & Academic Subjects</span>
+          </h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/admin/dashboard.html">Admin</a></li>
+              <li class="breadcrumb-item active">Courses & Subjects</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm px-3 fw-semibold" onclick="openAddCourseModal()">
+          <i class="bi bi-journal-plus me-1"></i> New Degree Course
+        </button>
+        <button class="btn btn-primary btn-sm px-3 fw-semibold" onclick="openAddSubjectModal()" style="background:#4F46E5;">
+          <i class="bi bi-plus-lg me-1"></i> New Subject
+        </button>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- Metrics Grid -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+          <div class="stat-card">
+            <div class="stat-card-icon"><i class="bi bi-book-fill"></i></div>
+            <div class="stat-card-value" id="statSubjectCount">0</div>
+            <div class="stat-card-label">Active Academic Subjects</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4">
+          <div class="stat-card info">
+            <div class="stat-card-icon"><i class="bi bi-mortarboard-fill"></i></div>
+            <div class="stat-card-value" id="statCourseCount">0</div>
+            <div class="stat-card-label">Degree Programs / Courses</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4">
+          <div class="stat-card success">
+            <div class="stat-card-icon"><i class="bi bi-patch-question-fill"></i></div>
+            <div class="stat-card-value" id="statQuestionCount">0</div>
+            <div class="stat-card-label">Linked Questions in Repository</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <ul class="nav nav-pills bg-white p-1 rounded-3 border shadow-sm" id="pills-tab">
+          <li class="nav-item">
+            <button class="nav-link active" id="tab-subjects-btn" onclick="switchTab('subjects')">
+              <i class="bi bi-book me-1"></i> Academic Subjects (<span id="tabSubCount">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="tab-courses-btn" onclick="switchTab('courses')">
+              <i class="bi bi-mortarboard me-1"></i> Degree Courses / Programs (<span id="tabCourseCount">0</span>)
+            </button>
+          </li>
+        </ul>
+        <div class="d-flex gap-2" style="max-width: 320px; width: 100%;">
+          <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search by title or code..." oninput="handleSearch()">
+        </div>
+      </div>
+
+      <!-- SECTION: SUBJECTS -->
+      <div id="section-subjects" class="ep-card">
+        <div class="ep-card-header d-flex justify-content-between align-items-center">
+          <h5 class="ep-card-title mb-0">Curriculum Subjects</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="ep-table mb-0">
+            <thead>
+              <tr>
+                <th>Subject Name</th>
+                <th>Course Code</th>
+                <th>Degree Program</th>
+                <th>Bank Questions</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="subjectsTbody">
+              <tr><td colspan="6" class="text-center py-4 text-muted small">Loading academic subjects...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SECTION: COURSES -->
+      <div id="section-courses" class="ep-card" style="display:none;">
+        <div class="ep-card-header d-flex justify-content-between align-items-center">
+          <h5 class="ep-card-title mb-0">Degree Programs & Departments</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="ep-table mb-0">
+            <thead>
+              <tr>
+                <th>Course Title</th>
+                <th>Code</th>
+                <th>Duration</th>
+                <th>Linked Subjects</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="coursesTbody">
+              <tr><td colspan="6" class="text-center py-4 text-muted small">Loading courses...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add Subject Modal -->
+  <div class="modal fade" id="addSubjectModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold">Create Academic Subject</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="addSubjectForm">
+          <div class="modal-body p-4">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Subject Name <span class="text-danger">*</span></label>
+              <input type="text" id="subName" class="form-control" placeholder="e.g. Artificial Intelligence & ML" required>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Subject Code <span class="text-danger">*</span></label>
+                <input type="text" id="subCode" class="form-control text-uppercase" placeholder="e.g. CS601" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Degree Program</label>
+                <select id="subCourseSelect" class="form-select">
+                  <option value="">-- Optional --</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Syllabus Description</label>
+              <textarea id="subDesc" class="form-control" rows="3" placeholder="Overview of topics, units and syllabus..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-top">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold" style="background:#4F46E5;">Save Subject</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Course Modal -->
+  <div class="modal fade" id="addCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold">Create Degree Course / Program</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="addCourseForm">
+          <div class="modal-body p-4">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Course Title <span class="text-danger">*</span></label>
+              <input type="text" id="courseName" class="form-control" placeholder="e.g. Bachelor of Technology (Computer Science)" required>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Course Code <span class="text-danger">*</span></label>
+                <input type="text" id="courseCode" class="form-control text-uppercase" placeholder="e.g. BTECH-CSE" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Duration (Years)</label>
+                <input type="number" id="courseYears" class="form-control" value="4" min="1" max="6">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Description</label>
+              <textarea id="courseDesc" class="form-control" rows="3" placeholder="Department details and curriculum scope..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-top">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold" style="background:#4F46E5;">Save Course</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['admin']);
+    Sidebar.load('admin', 'academics');
+
+    let allSubjects = [];
+    let allCourses = [];
+    let currentTab = 'subjects';
+
+    let addSubModal = null;
+    let addCourseModal = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      addSubModal = new bootstrap.Modal(document.getElementById('addSubjectModal'));
+      addCourseModal = new bootstrap.Modal(document.getElementById('addCourseModal'));
+
+      document.getElementById('addSubjectForm').addEventListener('submit', handleCreateSubject);
+      document.getElementById('addCourseForm').addEventListener('submit', handleCreateCourse);
+
+      loadData();
+    });
+
+    async function loadData() {
+      try {
+        const [subRes, courseRes] = await Promise.all([
+          ExamPortalAPI.admin.getSubjects(),
+          ExamPortalAPI.admin.getCourses()
+        ]);
+
+        allSubjects = subRes.data || [];
+        allCourses = courseRes.data || [];
+
+        // Update stats
+        document.getElementById('statSubjectCount').textContent = allSubjects.length;
+        document.getElementById('statCourseCount').textContent = allCourses.length;
+        const totalQ = allSubjects.reduce((sum, s) => sum + (parseInt(s.questions_count) || 0), 0);
+        document.getElementById('statQuestionCount').textContent = totalQ;
+
+        document.getElementById('tabSubCount').textContent = allSubjects.length;
+        document.getElementById('tabCourseCount').textContent = allCourses.length;
+
+        // Populate course dropdown in modal
+        const sel = document.getElementById('subCourseSelect');
+        sel.innerHTML = '<option value="">-- Optional --</option>';
+        allCourses.forEach(c => {
+          sel.innerHTML += `<option value="${c.id}">${c.name} (${c.code})</option>`;
+        });
+
+        renderSubjects(allSubjects);
+        renderCourses(allCourses);
+
+      } catch (err) {
+        Utils.showToast(err.message || 'Error loading academic data', 'error');
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      const subSec = document.getElementById('section-subjects');
+      const courseSec = document.getElementById('section-courses');
+      const subBtn = document.getElementById('tab-subjects-btn');
+      const courseBtn = document.getElementById('tab-courses-btn');
+
+      if (tab === 'courses') {
+        subSec.style.display = 'none';
+        courseSec.style.display = 'block';
+        subBtn.classList.remove('active');
+        courseBtn.classList.add('active');
+      } else {
+        subSec.style.display = 'block';
+        courseSec.style.display = 'none';
+        subBtn.classList.add('active');
+        courseBtn.classList.remove('active');
+      }
+    }
+
+    function handleSearch() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      if (currentTab === 'subjects') {
+        const filtered = allSubjects.filter(s => 
+          (s.name && s.name.toLowerCase().includes(q)) || 
+          (s.code && s.code.toLowerCase().includes(q)) ||
+          (s.course_name && s.course_name.toLowerCase().includes(q))
+        );
+        renderSubjects(filtered);
+      } else {
+        const filtered = allCourses.filter(c => 
+          (c.name && c.name.toLowerCase().includes(q)) || 
+          (c.code && c.code.toLowerCase().includes(q))
+        );
+        renderCourses(filtered);
+      }
+    }
+
+    function renderSubjects(list) {
+      const tbody = document.getElementById('subjectsTbody');
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No academic subjects found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(s => `
+        <tr>
+          <td>
+            <strong class="text-dark">${s.name}</strong>
+            ${s.description ? `<div class="small text-muted text-truncate" style="max-width:280px;">${s.description}</div>` : ''}
+          </td>
+          <td><span class="badge bg-light text-dark border font-monospace">${s.code}</span></td>
+          <td>${s.course_name ? `<span class="badge bg-primary-subtle text-primary">${s.course_name}</span>` : '<span class="text-muted">—</span>'}</td>
+          <td><span class="badge bg-info-subtle text-info fw-bold">${s.questions_count || 0} questions</span></td>
+          <td>
+            <span class="badge ${s.is_active == 1 ? 'bg-success' : 'bg-secondary'}">
+              ${s.is_active == 1 ? 'ACTIVE' : 'INACTIVE'}
+            </span>
+          </td>
+          <td>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-${s.is_active == 1 ? 'warning' : 'success'} py-0 px-2" onclick="toggleSubjectStatus(${s.id}, ${s.is_active})" title="Toggle Active">
+                <i class="bi bi-power"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteSubject(${s.id}, '${s.name.replace(/'/g, "\\'")}')" title="Delete Subject">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderCourses(list) {
+      const tbody = document.getElementById('coursesTbody');
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No degree courses registered.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(c => `
+        <tr>
+          <td>
+            <strong class="text-dark">${c.name}</strong>
+            ${c.description ? `<div class="small text-muted text-truncate" style="max-width:280px;">${c.description}</div>` : ''}
+          </td>
+          <td><span class="badge bg-light text-dark border font-monospace">${c.code}</span></td>
+          <td>${c.duration_years || 4} Years</td>
+          <td><span class="badge bg-primary-subtle text-primary fw-bold">${c.subjects_count || 0} Subjects</span></td>
+          <td>
+            <span class="badge ${c.is_active == 1 ? 'bg-success' : 'bg-secondary'}">
+              ${c.is_active == 1 ? 'ACTIVE' : 'INACTIVE'}
+            </span>
+          </td>
+          <td>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-${c.is_active == 1 ? 'warning' : 'success'} py-0 px-2" onclick="toggleCourseStatus(${c.id}, ${c.is_active})">
+                <i class="bi bi-power"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteCourse(${c.id}, '${c.name.replace(/'/g, "\\'")}')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openAddSubjectModal() { addSubModal.show(); }
+    function openAddCourseModal() { addCourseModal.show(); }
+
+    async function handleCreateSubject(e) {
+      e.preventDefault();
+      const name = document.getElementById('subName').value.trim();
+      const code = document.getElementById('subCode').value.trim();
+      const courseId = document.getElementById('subCourseSelect').value;
+      const desc = document.getElementById('subDesc').value.trim();
+
+      try {
+        await ExamPortalAPI.admin.createSubject({
+          name: name,
+          code: code,
+          course_id: courseId ? parseInt(courseId) : null,
+          description: desc
+        });
+        Utils.showToast('Subject created successfully!', 'success');
+        addSubModal.hide();
+        document.getElementById('addSubjectForm').reset();
+        await loadData();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error creating subject', 'error');
+      }
+    }
+
+    async function handleCreateCourse(e) {
+      e.preventDefault();
+      const name = document.getElementById('courseName').value.trim();
+      const code = document.getElementById('courseCode').value.trim();
+      const years = parseInt(document.getElementById('courseYears').value) || 4;
+      const desc = document.getElementById('courseDesc').value.trim();
+
+      try {
+        await ExamPortalAPI.admin.createCourse({
+          name: name,
+          code: code,
+          duration_years: years,
+          description: desc
+        });
+        Utils.showToast('Course program created successfully!', 'success');
+        addCourseModal.hide();
+        document.getElementById('addCourseForm').reset();
+        await loadData();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error creating course', 'error');
+      }
+    }
+
+    async function toggleSubjectStatus(id, currentStatus) {
+      try {
+        await ExamPortalAPI.admin.updateSubject(id, { is_active: currentStatus == 1 ? 0 : 1 });
+        Utils.showToast('Subject status updated', 'success');
+        await loadData();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error updating status', 'error');
+      }
+    }
+
+    async function deleteSubject(id, name) {
+      if (!confirm(`Are you sure you want to remove subject "${name}"?`)) return;
+      try {
+        await ExamPortalAPI.admin.deleteSubject(id);
+        Utils.showToast('Subject removed', 'success');
+        await loadData();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error deleting subject', 'error');
+      }
+    }
+
+    async function toggleCourseStatus(id, currentStatus) {
+      try {
+        await ExamPortalAPI.admin.updateCourse(id, { is_active: currentStatus == 1 ? 0 : 1 });
+        Utils.showToast('Course status updated', 'success');
+        await loadData();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error updating status', 'error');
+      }
+    }
+
+    async function deleteCourse(id, name) {
+      if (!confirm(`Are you sure you want to remove degree course "${name}"?`)) return;
+      try {
+        await ExamPortalAPI.admin.deleteCourse(id);
+        Utils.showToast('Course removed', 'success');
+        await loadData();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error deleting course', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

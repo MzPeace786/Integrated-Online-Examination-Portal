@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Question Bank Dashboard — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+  <style>
+    .nav-pills .nav-link {
+      color: #64748B;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+    .nav-pills .nav-link.active {
+      background: #4F46E5;
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+    }
+    .bank-card {
+      border: 1.5px solid #E2E8F0;
+      border-radius: 16px;
+      background: #FFFFFF;
+      transition: all 0.25s ease;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .bank-card:hover {
+      border-color: #6366F1;
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.1);
+    }
+    .ai-badge {
+      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+    }
+    .generator-card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+    .generator-header {
+      background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+      color: #FFFFFF;
+      padding: 24px 30px;
+    }
+    .question-card {
+      border: 1.5px solid #E2E8F0;
+      border-radius: 12px;
+      background: #FFFFFF;
+      transition: all 0.2s ease;
+    }
+    .question-card:hover {
+      border-color: #6366F1;
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.08);
+    }
+    .question-card.selected {
+      border-color: #4F46E5;
+      background: #FAFAFF;
+    }
+    .opt-pill {
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      border: 1px solid #E2E8F0;
+      background: #F8FAFC;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .opt-pill.correct {
+      background: #ECFDF5;
+      border-color: #10B981;
+      color: #065F46;
+      font-weight: 600;
+    }
+    .testcase-box {
+      background: #0F172A;
+      color: #94A3B8;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title mb-1">Question Bank Dashboard</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/examiner/dashboard.html">Examiner</a></li>
+              <li class="breadcrumb-item active">Question Bank</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm px-3 fw-bold" onclick="switchTab('ai')">
+          <i class="bi bi-magic me-1"></i> AI Question Suggester
+        </button>
+        <button class="btn btn-outline-dark btn-sm px-3 fw-semibold" onclick="openCreateBankModal()">
+          <i class="bi bi-folder-plus me-1"></i> New Bank
+        </button>
+        <a href="/exam-portal/frontend/pages/examiner/create-question.html" class="btn btn-primary btn-sm px-3 fw-semibold" style="background:#4F46E5;">
+          <i class="bi bi-plus-lg me-1"></i> Add Question
+        </a>
+      </div>
+    </header>
+
+    <div class="content-area max-w-1200 mx-auto">
+      
+      <!-- Top Metrics Grid -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-card-icon"><i class="bi bi-folder-fill"></i></div>
+            <div class="stat-card-value" id="statBankCount">0</div>
+            <div class="stat-card-label">Total Question Banks</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card info">
+            <div class="stat-card-icon"><i class="bi bi-patch-question-fill"></i></div>
+            <div class="stat-card-value" id="statQuestionCount">0</div>
+            <div class="stat-card-label">Total Questions Stored</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card success">
+            <div class="stat-card-icon"><i class="bi bi-book-half"></i></div>
+            <div class="stat-card-value" id="statSubjectCount">0</div>
+            <div class="stat-card-label">Active Subject Domains</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card warning">
+            <div class="stat-card-icon"><i class="bi bi-robot"></i></div>
+            <div class="stat-card-value" id="statAiCount">Active</div>
+            <div class="stat-card-label">AI Generation Engine</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (Banks Library vs AI Question Suggester) -->
+      <ul class="nav nav-pills mb-4 bg-white p-2 rounded-4 shadow-sm border" id="pills-tab" role="tablist">
+        <li class="nav-item flex-fill text-center" role="presentation">
+          <button class="nav-link w-100 active" id="tab-banks-btn" onclick="switchTab('banks')">
+            <i class="bi bi-folder2-open me-2"></i> Question Banks & Repository
+          </button>
+        </li>
+        <li class="nav-item flex-fill text-center" role="presentation">
+          <button class="nav-link w-100" id="tab-ai-btn" onclick="switchTab('ai')">
+            <i class="bi bi-magic text-warning me-2"></i> AI Question Suggester & Automated Generator
+            <span class="badge bg-danger ms-2" style="font-size: 0.65rem;">NEW</span>
+          </button>
+        </li>
+      </ul>
+
+      <!-- ======================================================== -->
+      <!-- TAB 1: QUESTION BANKS & LIBRARY -->
+      <!-- ======================================================== -->
+      <div id="section-banks">
+        <!-- Filter & Search Toolbar -->
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+          <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="searchBankInput" class="form-control bg-light border-start-0" placeholder="Search question banks by title or description..." oninput="filterBanks()">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <select id="filterSubjectSelect" class="form-select" onchange="filterBanks()">
+                <option value="">All Academic Subjects</option>
+              </select>
+            </div>
+            <div class="col-md-3 text-md-end">
+              <button class="btn btn-outline-primary btn-sm w-100 fw-semibold" onclick="switchTab('ai')">
+                <i class="bi bi-plus-circle-dotted me-1"></i> Auto-Generate Bank with AI
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question Banks Grid -->
+        <div class="row g-4" id="banksGrid">
+          <div class="col-12 text-center py-5 text-muted">Loading Question Banks...</div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- TAB 2: AI QUESTION SUGGESTER & AUTOMATED GENERATOR -->
+      <!-- ======================================================== -->
+      <div id="section-ai" style="display: none;">
+        
+        <!-- Generator Form Card -->
+        <div class="generator-card mb-4">
+          <div class="generator-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h4 class="fw-bold mb-1"><i class="bi bi-cpu me-2"></i>Curriculum Question Synthesis</h4>
+                <p class="mb-0 text-white-50 small">Specify a subject and syllabus details to automatically generate complete questions with answer keys.</p>
+              </div>
+              <div>
+                <span class="badge bg-white bg-opacity-20 px-3 py-2 text-white fw-semibold">
+                  <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Instant Batch Synthesis
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 p-md-5">
+            <form id="suggestForm">
+              <div class="row g-3">
+                
+                <!-- Subject Selection -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Subject Name <span class="text-danger">*</span></label>
+                  <select id="genSubjectSelect" class="form-select" required onchange="handleSubjectChange()">
+                    <option value="">-- Choose Subject --</option>
+                    <option value="Data Structures and Algorithms" data-id="1">Data Structures and Algorithms (CS301)</option>
+                    <option value="Database Management Systems" data-id="2">Database Management Systems (CS302)</option>
+                    <option value="Operating Systems" data-id="3">Operating Systems (CS303)</option>
+                    <option value="Computer Networks" data-id="4">Computer Networks (CS401)</option>
+                    <option value="Software Engineering" data-id="5">Software Engineering (CS402)</option>
+                    <option value="Web Technologies" data-id="6">Web Technologies & Full Stack (CS501)</option>
+                    <option value="Artificial Intelligence" data-id="7">Artificial Intelligence & ML (CS601)</option>
+                    <option value="Discrete Mathematics" data-id="10">Discrete Mathematics (MA201)</option>
+                    <option value="custom">-- Custom / Other Subject --</option>
+                  </select>
+                </div>
+
+                <!-- Custom Subject Input -->
+                <div class="col-md-6" id="customSubjectGroup" style="display:none;">
+                  <label class="form-label fw-bold">Enter Custom Subject Name <span class="text-danger">*</span></label>
+                  <input type="text" id="customSubjectName" class="form-control" placeholder="e.g. Cloud Computing, Cyber Security, DevOps">
+                </div>
+
+                <!-- Topic / Syllabus Details -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Specific Topic / Syllabus Details <span class="text-muted fw-normal">(Optional)</span></label>
+                  <input type="text" id="genTopicInput" class="form-control" placeholder="e.g. Binary Search Trees, SQL Joins, Deadlocks, Paging, TCP/IP">
+                  <div class="form-text small">Leave blank for overall subject coverage or enter key units.</div>
+                </div>
+
+                <!-- Difficulty -->
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Difficulty Profile</label>
+                  <select id="genDifficulty" class="form-select">
+                    <option value="mixed" selected>Mixed (Balanced Exam Distribution)</option>
+                    <option value="easy">Easy (Definitions & Fundamental Concepts)</option>
+                    <option value="medium">Medium (Analytical & Implementation)</option>
+                    <option value="hard">Hard (Advanced & Complex Edge Cases)</option>
+                  </select>
+                </div>
+
+                <!-- Format -->
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Question Format</label>
+                  <select id="genQuestionType" class="form-select">
+                    <option value="all" selected>All Formats (MCQ, T/F, Short Answer, Coding)</option>
+                    <option value="mcq">Multiple Choice Questions (MCQ Only)</option>
+                    <option value="true_false">True / False Only</option>
+                    <option value="short_answer">Short Answer / Conceptual</option>
+                    <option value="coding">Practical Coding Problems</option>
+                  </select>
+                </div>
+
+                <!-- Quantity -->
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Quantity</label>
+                  <select id="genCount" class="form-select">
+                    <option value="5" selected>5 Questions</option>
+                    <option value="10">10 Questions</option>
+                    <option value="15">15 Questions</option>
+                    <option value="20">20 Questions</option>
+                  </select>
+                </div>
+
+                <!-- Target Bank -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Save Into Question Bank</label>
+                  <select id="targetBankSelect" class="form-select">
+                    <option value="new">+ Create New Bank Automatically</option>
+                  </select>
+                </div>
+
+                <!-- Direct Exam Link -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Directly Link to Exam <span class="text-muted fw-normal">(Optional)</span></label>
+                  <select id="targetExamSelect" class="form-select">
+                    <option value="">-- None (Save to Bank Only) --</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Submit -->
+              <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                <div class="small text-muted">
+                  <i class="bi bi-info-circle me-1"></i> Questions generated include answer keys, distractors, and solution explanations.
+                </div>
+                <button type="submit" id="generateBtn" class="btn btn-primary px-4 py-2 fw-bold shadow-sm" style="background:#4F46E5;">
+                  <i class="bi bi-magic me-2"></i> Generate & Suggest Questions
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Generated Questions Review Area -->
+        <div id="resultsSection" style="display: none;">
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+            <div>
+              <h4 class="fw-bold text-dark mb-0"><i class="bi bi-check2-all text-primary me-2"></i>Generated Questions Review</h4>
+              <div class="text-muted small mt-1" id="resultsCountText">Showing generated questions</div>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-outline-secondary btn-sm" onclick="toggleSelectAll(true)">Select All</button>
+              <button class="btn btn-outline-secondary btn-sm" onclick="toggleSelectAll(false)">Deselect All</button>
+              <button class="btn btn-success btn-sm px-3 fw-bold" onclick="importSelectedQuestions()">
+                <i class="bi bi-cloud-arrow-down-fill me-1"></i> Import Selected (<span id="selectedCountBadge">0</span>)
+              </button>
+            </div>
+          </div>
+
+          <div id="questionsContainer" class="d-flex flex-column gap-3 mb-4"></div>
+
+          <div class="card border-0 shadow-sm p-4 rounded-4 bg-white d-flex flex-row justify-content-between align-items-center mb-5">
+            <div>
+              <h6 class="fw-bold mb-1">Ready to Save?</h6>
+              <div class="text-muted small">Imported questions will be immediately available in your selected Question Bank.</div>
+            </div>
+            <button class="btn btn-success px-4 py-2 fw-bold shadow-sm" onclick="importSelectedQuestions()">
+              <i class="bi bi-check-circle-fill me-2"></i> Finalize & Import Selected Questions
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Create Bank Modal -->
+  <div class="modal fade" id="createBankModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold">Create New Question Bank</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="createBankForm">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Bank Name *</label>
+              <input type="text" id="newBankName" class="form-control" placeholder="e.g. CS301 Tree & Graph Bank" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Subject</label>
+              <select id="newBankSubject" class="form-select">
+                <option value="1">Data Structures and Algorithms (CS301)</option>
+                <option value="2">Database Management Systems (CS302)</option>
+                <option value="3">Operating Systems (CS303)</option>
+                <option value="4">Computer Networks (CS401)</option>
+                <option value="5">Software Engineering (CS402)</option>
+                <option value="6">Web Technologies (CS501)</option>
+                <option value="7">Artificial Intelligence (CS601)</option>
+                <option value="10">Discrete Mathematics (MA201)</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Description (Optional)</label>
+              <textarea id="newBankDesc" class="form-control" rows="2" placeholder="Brief notes on topics covered..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary fw-bold" style="background:#4F46E5;">Create Bank</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Bank Questions Offcanvas/Modal -->
+  <div class="modal fade" id="viewQuestionsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-bottom">
+          <div>
+            <h5 class="modal-title fw-bold" id="viewBankTitle">Question Bank Details</h5>
+            <div class="small text-muted" id="viewBankSubtitle">--</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4" id="viewBankQuestionsBody">
+          <div class="text-center py-4 text-muted">Loading questions...</div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+          <a id="bankAddQuestionLink" href="#" class="btn btn-primary btn-sm fw-semibold" style="background:#4F46E5;">
+            <i class="bi bi-plus-lg me-1"></i> Add Question to this Bank
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+
+  <script>
+    Auth.requireAuth(['examiner', 'admin']);
+    Sidebar.load('examiner', 'question-bank');
+
+    let allBanks = [];
+    let loadedExams = [];
+    let currentQuestions = [];
+    let selectedIndices = new Set();
+    let createBankModalInstance = null;
+    let viewQuestionsModalInstance = null;
+
+    document.addEventListener('DOMContentLoaded', initDashboard);
+
+    async function initDashboard() {
+      createBankModalInstance = new bootstrap.Modal(document.getElementById('createBankModal'));
+      viewQuestionsModalInstance = new bootstrap.Modal(document.getElementById('viewQuestionsModal'));
+
+      await loadQuestionBanksData();
+      await loadExamsList();
+      populateSubjectFilters();
+
+      document.getElementById('suggestForm').addEventListener('submit', handleGenerateQuestions);
+      document.getElementById('createBankForm').addEventListener('submit', handleCreateBank);
+
+      // Check query params
+      const tabParam = Utils.getQueryParam('tab');
+      const examIdParam = Utils.getQueryParam('exam_id');
+      const bankIdParam = Utils.getQueryParam('bank_id');
+      const subjectIdParam = Utils.getQueryParam('subject_id');
+
+      if (examIdParam) {
+        switchTab('ai');
+        const examSel = document.getElementById('targetExamSelect');
+        if (examSel) examSel.value = examIdParam;
+      }
+
+      if (bankIdParam) {
+        const bankSel = document.getElementById('targetBankSelect');
+        if (bankSel) bankSel.value = bankIdParam;
+      }
+
+      if (subjectIdParam) {
+        const subSel = document.getElementById('genSubjectSelect');
+        if (subSel) {
+          for (let opt of subSel.options) {
+            if (opt.getAttribute('data-id') === String(subjectIdParam)) {
+              subSel.value = opt.value;
+              handleSubjectChange();
+              break;
+            }
+          }
+        }
+      }
+
+      if (tabParam === 'ai') {
+        switchTab('ai');
+      }
+    }
+
+    function switchTab(tab) {
+      const banksSection = document.getElementById('section-banks');
+      const aiSection = document.getElementById('section-ai');
+      const banksBtn = document.getElementById('tab-banks-btn');
+      const aiBtn = document.getElementById('tab-ai-btn');
+
+      if (tab === 'ai') {
+        banksSection.style.display = 'none';
+        aiSection.style.display = 'block';
+        banksBtn.classList.remove('active');
+        aiBtn.classList.add('active');
+      } else {
+        banksSection.style.display = 'block';
+        aiSection.style.display = 'none';
+        banksBtn.classList.add('active');
+        aiBtn.classList.remove('active');
+      }
+    }
+
+    async function loadQuestionBanksData() {
+      try {
+        const resp = await ExamPortalAPI.examiner.getQuestionBanks();
+        allBanks = resp.data || [];
+
+        // Update stats
+        document.getElementById('statBankCount').textContent = allBanks.length;
+        const totalQ = allBanks.reduce((sum, b) => sum + (parseInt(b.questions_count) || 0), 0);
+        document.getElementById('statQuestionCount').textContent = totalQ;
+
+        const uniqueSubjects = new Set(allBanks.map(b => b.subject_name).filter(Boolean));
+        document.getElementById('statSubjectCount').textContent = uniqueSubjects.size || 1;
+
+        renderBanksGrid(allBanks);
+        populateBankSelects();
+      } catch (err) {
+        document.getElementById('banksGrid').innerHTML = `
+          <div class="col-12 text-center py-5 text-danger">${err.message || 'Error loading question banks'}</div>`;
+      }
+    }
+
+    async function loadExamsList() {
+      try {
+        const resp = await ExamPortalAPI.examiner.getExams();
+        loadedExams = resp.data || [];
+        const sel = document.getElementById('targetExamSelect');
+        sel.innerHTML = '<option value="">-- None (Save to Bank Only) --</option>';
+        loadedExams.forEach(e => {
+          sel.innerHTML += `<option value="${e.id}">${e.title}</option>`;
+        });
+      } catch (_) {}
+    }
+
+    function populateSubjectFilters() {
+      const filterSel = document.getElementById('filterSubjectSelect');
+      const subjects = [
+        'Data Structures and Algorithms',
+        'Database Management Systems',
+        'Operating Systems',
+        'Computer Networks',
+        'Software Engineering',
+        'Web Technologies',
+        'Artificial Intelligence',
+        'Discrete Mathematics'
+      ];
+      subjects.forEach(s => {
+        filterSel.innerHTML += `<option value="${s}">${s}</option>`;
+      });
+    }
+
+    function populateBankSelects() {
+      const sel = document.getElementById('targetBankSelect');
+      sel.innerHTML = '<option value="new">+ Create New Bank Automatically</option>';
+      allBanks.forEach(b => {
+        sel.innerHTML += `<option value="${b.id}">${b.name} (${b.questions_count || 0} questions)</option>`;
+      });
+    }
+
+    function renderBanksGrid(banks) {
+      const grid = document.getElementById('banksGrid');
+      if (!banks || banks.length === 0) {
+        grid.innerHTML = `
+          <div class="col-12 text-center py-5">
+            <div class="p-4 bg-white rounded-4 border shadow-sm max-w-600 mx-auto">
+              <i class="bi bi-folder-x text-muted display-4 d-block mb-3"></i>
+              <h5 class="fw-bold">No Question Banks Found</h5>
+              <p class="text-muted small">You haven't created any question banks yet. Create one manually or use the AI Suggester to auto-generate a bank.</p>
+              <div class="d-flex justify-content-center gap-2 mt-3">
+                <button class="btn btn-primary btn-sm fw-bold px-3" onclick="switchTab('ai')"><i class="bi bi-magic me-1"></i> Auto-Generate with AI</button>
+                <button class="btn btn-outline-dark btn-sm fw-semibold px-3" onclick="openCreateBankModal()"><i class="bi bi-plus-lg me-1"></i> New Bank</button>
+              </div>
+            </div>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = banks.map(b => `
+        <div class="col-md-6 col-lg-4">
+          <div class="bank-card p-4">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-bold" style="font-size: 0.75rem;">
+                <i class="bi bi-book me-1"></i> ${b.subject_name || 'General Subject'}
+              </span>
+              <span class="badge bg-light text-dark border fw-bold">${b.questions_count || 0} Questions</span>
+            </div>
+
+            <h5 class="fw-bold text-dark mt-2 mb-1 text-truncate" title="${b.name}">${b.name}</h5>
+            <p class="small text-muted mb-3 flex-grow-1" style="min-height: 38px;">
+              ${b.description ? (b.description.length > 75 ? b.description.slice(0, 75) + '...' : b.description) : 'Curated academic assessment questions.'}
+            </p>
+
+            <div class="small text-muted mb-3 border-top pt-2">
+              <i class="bi bi-calendar3 me-1"></i> Created: ${Utils.formatDate(b.created_at)}
+            </div>
+
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-primary btn-sm flex-fill fw-semibold" onclick="viewBankQuestions(${b.id}, '${escapeQuotes(b.name)}')">
+                <i class="bi bi-eye me-1"></i> View (${b.questions_count})
+              </button>
+              <button class="btn btn-warning btn-sm fw-bold px-2" onclick="autoGenerateMoreForBank(${b.id}, '${escapeQuotes(b.subject_name || '')}')" title="AI Generate More Questions for this Bank">
+                <i class="bi bi-magic"></i>
+              </button>
+              <a href="/exam-portal/frontend/pages/examiner/create-question.html?bank_id=${b.id}" class="btn btn-light btn-sm border px-2" title="Add Question Manually">
+                <i class="bi bi-plus-lg"></i>
+              </a>
+              <button class="btn btn-outline-danger btn-sm px-2" onclick="confirmDeleteBank(${b.id}, '${escapeQuotes(b.name)}')" title="Delete Bank">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escapeQuotes(str) {
+      return (str || '').replace(/'/g, "\\'");
+    }
+
+    function filterBanks() {
+      const q = document.getElementById('searchBankInput').value.toLowerCase().trim();
+      const sub = document.getElementById('filterSubjectSelect').value;
+
+      const filtered = allBanks.filter(b => {
+        const matchesQ = !q || (b.name && b.name.toLowerCase().includes(q)) || (b.description && b.description.toLowerCase().includes(q));
+        const matchesSub = !sub || (b.subject_name === sub);
+        return matchesQ && matchesSub;
+      });
+
+      renderBanksGrid(filtered);
+    }
+
+    function openCreateBankModal() {
+      createBankModalInstance.show();
+    }
+
+    async function handleCreateBank(e) {
+      e.preventDefault();
+      const name = document.getElementById('newBankName').value.trim();
+      const subjectId = parseInt(document.getElementById('newBankSubject').value);
+      const desc = document.getElementById('newBankDesc').value.trim();
+
+      try {
+        await ExamPortalAPI.examiner.createQuestionBank({
+          name: name,
+          subject_id: subjectId,
+          description: desc
+        });
+
+        Utils.showToast('Question bank created successfully!', 'success');
+        createBankModalInstance.hide();
+        document.getElementById('createBankForm').reset();
+        await loadQuestionBanksData();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error creating bank', 'error');
+      }
+    }
+
+    function autoGenerateMoreForBank(bankId, subjectName) {
+      switchTab('ai');
+      const bankSel = document.getElementById('targetBankSelect');
+      bankSel.value = bankId;
+
+      if (subjectName) {
+        const subSel = document.getElementById('genSubjectSelect');
+        for (let opt of subSel.options) {
+          if (opt.text.toLowerCase().includes(subjectName.toLowerCase())) {
+            subSel.value = opt.value;
+            break;
+          }
+        }
+      }
+      Utils.showToast(`Selected bank #${bankId}. Ready to generate syllabus questions.`, 'info');
+    }
+
+    async function viewBankQuestions(bankId, bankName) {
+      document.getElementById('viewBankTitle').textContent = bankName;
+      document.getElementById('viewBankSubtitle').textContent = `Question Bank ID: #${bankId}`;
+      document.getElementById('bankAddQuestionLink').href = `/exam-portal/frontend/pages/examiner/create-question.html?bank_id=${bankId}`;
+
+      const body = document.getElementById('viewBankQuestionsBody');
+      body.innerHTML = '<div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading questions...</div>';
+      viewQuestionsModalInstance.show();
+
+      try {
+        const resp = await ExamPortalAPI.examiner.getQuestions(bankId);
+        const questions = resp.data || [];
+
+        if (questions.length === 0) {
+          body.innerHTML = `
+            <div class="text-center py-5">
+              <i class="bi bi-patch-question text-muted display-4 mb-2 d-block"></i>
+              <h6 class="text-muted fw-bold">This question bank is currently empty.</h6>
+              <div class="d-flex justify-content-center gap-2 mt-3">
+                <button class="btn btn-warning btn-sm fw-bold px-3" onclick="viewQuestionsModalInstance.hide(); autoGenerateMoreForBank(${bankId}, '')">
+                  <i class="bi bi-magic me-1"></i> Auto-Generate with AI
+                </button>
+                <a href="/exam-portal/frontend/pages/examiner/create-question.html?bank_id=${bankId}" class="btn btn-primary btn-sm fw-semibold px-3">
+                  <i class="bi bi-plus-lg me-1"></i> Add Manually
+                </a>
+              </div>
+            </div>`;
+          return;
+        }
+
+        body.innerHTML = questions.map((q, idx) => {
+          const diffBadge = q.difficulty === 'easy' ? 'bg-success-subtle text-success border border-success-subtle' :
+                            q.difficulty === 'hard' ? 'bg-danger-subtle text-danger border border-danger-subtle' :
+                            'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+
+          let optsHtml = '';
+          if (q.options && q.options.length > 0) {
+            optsHtml = `
+              <div class="row g-2 mt-2">
+                ${q.options.map(opt => `
+                  <div class="col-md-6">
+                    <div class="opt-pill ${opt.is_correct ? 'correct' : ''}">
+                      <i class="bi ${opt.is_correct ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'}"></i>
+                      <span>${opt.option_text}</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>`;
+          }
+
+          return `
+            <div class="p-3 mb-3 border rounded-3 bg-white">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="fw-bold text-dark">Q${idx + 1}.</span>
+                  <span class="badge bg-light text-dark border fw-bold">${q.question_type.toUpperCase()}</span>
+                  <span class="badge ${diffBadge} fw-bold">${q.difficulty.toUpperCase()}</span>
+                  <span class="badge bg-light text-muted border">${q.marks} Marks</span>
+                </div>
+                <button class="btn btn-outline-danger btn-sm py-0 px-2" onclick="deleteSingleQuestion(${q.id}, ${bankId})" title="Delete Question">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+              <div class="fw-semibold text-dark mb-2">${q.question_text}</div>
+              ${optsHtml}
+              ${q.explanation ? `<div class="small text-muted mt-2 pt-2 border-top"><strong>Explanation:</strong> ${q.explanation}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        body.innerHTML = `<div class="text-danger py-4 text-center">${err.message || 'Error loading questions'}</div>`;
+      }
+    }
+
+    async function deleteSingleQuestion(qId, bankId) {
+      if (!confirm('Are you sure you want to delete this question?')) return;
+      try {
+        await ExamPortalAPI.examiner.deleteQuestion(qId);
+        Utils.showToast('Question deleted', 'success');
+        const currentTitle = document.getElementById('viewBankTitle').textContent;
+        viewBankQuestions(bankId, currentTitle);
+        loadQuestionBanksData();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error deleting question', 'error');
+      }
+    }
+
+    function confirmDeleteBank(bankId, bankName) {
+      Utils.showConfirm(
+        'Delete Question Bank',
+        `Are you sure you want to remove '${bankName}'? All associated questions in this bank will be deleted.`,
+        async () => {
+          try {
+            await ExamPortalAPI.examiner.deleteQuestion(bankId); // or delete bank
+            const resp = await fetch(`/exam-portal/backend/api/examiner/question-banks/${bankId}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${Auth.getToken()}` }
+            });
+            Utils.showToast('Question bank removed', 'success');
+            await loadQuestionBanksData();
+          } catch (err) {
+            Utils.showToast(err.message || 'Error deleting bank', 'error');
+          }
+        }
+      );
+    }
+
+    // -------------------------------------------------------------
+    // AI Question Suggester Functions
+    // -------------------------------------------------------------
+
+    function handleSubjectChange() {
+      const val = document.getElementById('genSubjectSelect').value;
+      const customGroup = document.getElementById('customSubjectGroup');
+      if (val === 'custom') {
+        customGroup.style.display = 'block';
+        document.getElementById('customSubjectName').required = true;
+      } else {
+        customGroup.style.display = 'none';
+        document.getElementById('customSubjectName').required = false;
+      }
+    }
+
+    async function handleGenerateQuestions(e) {
+      e.preventDefault();
+
+      let subjectName = document.getElementById('genSubjectSelect').value;
+      let subjectId = null;
+
+      if (subjectName === 'custom') {
+        subjectName = document.getElementById('customSubjectName').value.trim();
+      } else {
+        const opt = document.getElementById('genSubjectSelect').selectedOptions[0];
+        subjectId = opt ? opt.getAttribute('data-id') : null;
+      }
+
+      if (!subjectName) {
+        Utils.showToast('Please select or enter a subject', 'warning');
+        return;
+      }
+
+      const topicDetails = document.getElementById('genTopicInput').value.trim();
+      const difficulty = document.getElementById('genDifficulty').value;
+      const questionType = document.getElementById('genQuestionType').value;
+      const count = parseInt(document.getElementById('genCount').value) || 5;
+
+      const btn = document.getElementById('generateBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Synthesizing Questions...';
+
+      try {
+        const resp = await ExamPortalAPI.examiner.suggestQuestions({
+          subject_name: subjectName,
+          subject_id: subjectId,
+          topic: topicDetails,
+          difficulty: difficulty,
+          question_type: questionType,
+          count: count
+        });
+
+        currentQuestions = resp.data || [];
+        selectedIndices = new Set(currentQuestions.map((_, i) => i));
+
+        renderSuggestedQuestions();
+        document.getElementById('resultsSection').style.display = 'block';
+        document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+
+        Utils.showToast(`Synthesized ${currentQuestions.length} questions for ${subjectName}!`, 'success');
+      } catch (err) {
+        Utils.showToast(err.message || 'Error synthesizing questions', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-magic me-2"></i> Generate & Suggest Questions';
+      }
+    }
+
+    function renderSuggestedQuestions() {
+      const container = document.getElementById('questionsContainer');
+      document.getElementById('selectedCountBadge').textContent = selectedIndices.size;
+      document.getElementById('resultsCountText').textContent = `Synthesized ${currentQuestions.length} questions. ${selectedIndices.size} selected for import.`;
+
+      if (currentQuestions.length === 0) {
+        container.innerHTML = '<div class="text-center py-5 text-muted">No questions generated. Try adjusting topic keywords.</div>';
+        return;
+      }
+
+      container.innerHTML = currentQuestions.map((q, idx) => {
+        const isSelected = selectedIndices.has(idx);
+        const diffBadge = q.difficulty === 'easy' ? 'bg-success-subtle text-success border border-success-subtle' :
+                          q.difficulty === 'hard' ? 'bg-danger-subtle text-danger border border-danger-subtle' :
+                          'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+
+        let optionsHtml = '';
+        if (q.question_type === 'mcq' || q.question_type === 'multiple_correct' || q.question_type === 'true_false') {
+          optionsHtml = `
+            <div class="row g-2 mt-2">
+              ${(q.options || []).map(opt => `
+                <div class="col-md-6">
+                  <div class="opt-pill ${opt.is_correct ? 'correct' : ''}">
+                    <i class="bi ${opt.is_correct ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'}"></i>
+                    <span>${opt.text || opt.option_text || ''}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else if (q.question_type === 'coding') {
+          optionsHtml = `
+            <div class="mt-2">
+              <span class="small fw-bold text-muted">Automated Test Cases:</span>
+              ${(q.test_cases || []).map(tc => `
+                <div class="testcase-box mt-1">
+                  Input: <code>${tc.input || ''}</code> | Expected: <code>${tc.output || ''}</code>
+                  ${tc.is_hidden ? '<span class="badge bg-secondary ms-2">Hidden</span>' : ''}
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        return `
+          <div class="question-card p-4 ${isSelected ? 'selected' : ''}" id="qCard_${idx}">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <input class="form-check-input mt-0" type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleQuestionSelect(${idx}, this.checked)">
+                <span class="fw-bold text-dark">#${idx + 1}</span>
+                <span class="badge bg-light text-dark border fw-bold">${q.question_type.toUpperCase()}</span>
+                <span class="badge ${diffBadge} fw-bold">${q.difficulty.toUpperCase()}</span>
+                <span class="badge bg-light text-muted border">${q.marks} Marks</span>
+              </div>
+              <div>
+                <button class="btn btn-outline-danger btn-sm py-0 px-2" onclick="removeSuggestedQuestion(${idx})" title="Remove"><i class="bi bi-trash"></i></button>
+              </div>
+            </div>
+
+            <div class="question-text fw-semibold text-dark mt-2 mb-2" style="font-size: 1.02rem;">
+              ${q.question_text}
+            </div>
+
+            ${optionsHtml}
+
+            ${q.explanation ? `
+              <div class="small text-muted mt-3 pt-2 border-top">
+                <i class="bi bi-lightbulb-fill text-warning me-1"></i><strong>Solution Explanation:</strong> ${q.explanation}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleQuestionSelect(idx, isChecked) {
+      if (isChecked) selectedIndices.add(idx);
+      else selectedIndices.delete(idx);
+      
+      const card = document.getElementById(`qCard_${idx}`);
+      if (card) {
+        if (isChecked) card.classList.add('selected');
+        else card.classList.remove('selected');
+      }
+
+      document.getElementById('selectedCountBadge').textContent = selectedIndices.size;
+    }
+
+    function toggleSelectAll(select) {
+      if (select) {
+        selectedIndices = new Set(currentQuestions.map((_, i) => i));
+      } else {
+        selectedIndices.clear();
+      }
+      renderSuggestedQuestions();
+    }
+
+    function removeSuggestedQuestion(idx) {
+      currentQuestions.splice(idx, 1);
+      selectedIndices = new Set(currentQuestions.map((_, i) => i));
+      renderSuggestedQuestions();
+    }
+
+    async function importSelectedQuestions() {
+      if (selectedIndices.size === 0) {
+        Utils.showToast('Please select at least one question to import', 'warning');
+        return;
+      }
+
+      const selectedQuestions = Array.from(selectedIndices).map(i => currentQuestions[i]);
+      const bankChoice = document.getElementById('targetBankSelect').value;
+      const examChoice = document.getElementById('targetExamSelect').value;
+
+      let subjectId = null;
+      const sel = document.getElementById('genSubjectSelect');
+      if (sel.value !== 'custom') {
+        const opt = sel.selectedOptions[0];
+        subjectId = opt ? parseInt(opt.getAttribute('data-id')) : null;
+      }
+
+      const payload = {
+        questions: selectedQuestions,
+        subject_id: subjectId,
+        question_bank_id: bankChoice === 'new' ? null : parseInt(bankChoice),
+        bank_name: `${sel.value} Question Bank (${new Date().toLocaleDateString()})`,
+        exam_id: examChoice ? parseInt(examChoice) : null
+      };
+
+      Utils.showLoading('Importing questions into database...');
+
+      try {
+        const resp = await ExamPortalAPI.examiner.bulkImportQuestions(payload);
+        Utils.showToast(`Success! Imported ${resp.data.imported_count} questions into Question Bank.`, 'success');
+        
+        await loadQuestionBanksData();
+        setTimeout(() => {
+          switchTab('banks');
+          document.getElementById('resultsSection').style.display = 'none';
+        }, 1200);
+
+      } catch (err) {
+        Utils.showToast(err.message || 'Error importing questions', 'error');
+      } finally {
+        Utils.hideLoading();
+      }
+    }
+  </script>
+</body>
+</html>

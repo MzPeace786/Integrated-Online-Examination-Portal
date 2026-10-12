@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title">Candidate Notifications</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/student/dashboard.html">Dashboard</a></li>
+              <li class="breadcrumb-item active">Notifications</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div>
+        <button class="btn btn-outline-primary btn-sm" onclick="markAllAsRead()">
+          <i class="bi bi-check-all me-1"></i> Mark All as Read
+        </button>
+      </div>
+    </header>
+
+    <div class="content-area max-w-900 mx-auto">
+      <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <div id="notificationsList" class="d-flex flex-column gap-3">
+          <div class="text-center py-4 text-muted small">Loading notifications...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['student']);
+    Sidebar.load('student', 'notifications');
+
+    document.addEventListener('DOMContentLoaded', loadNotifications);
+
+    async function loadNotifications() {
+      const container = document.getElementById('notificationsList');
+      try {
+        const resp = await ExamPortalAPI.student.getNotifications();
+        const list = resp.data;
+
+        if (!list || list.length === 0) {
+          container.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-bell-slash fs-2 d-block mb-2"></i>No notifications yet.</div>';
+          return;
+        }
+
+        container.innerHTML = list.map(n => `
+          <div class="p-3 rounded-3 border ${n.is_read ? 'bg-light' : 'bg-primary-subtle border-primary-subtle'} d-flex align-items-start gap-3">
+            <i class="bi bi-info-circle-fill text-primary fs-4 mt-1"></i>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-1 text-dark">${n.title}</h6>
+                <span class="small text-muted">${Utils.timeAgo(n.created_at)}</span>
+              </div>
+              <p class="small text-muted mb-0">${n.message}</p>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="text-danger py-4 text-center">${err.message || 'Error'}</div>`;
+      }
+    }
+
+    async function markAllAsRead() {
+      try {
+        await ExamPortalAPI.student.markAllRead();
+        Utils.showToast('All notifications marked as read', 'success');
+        loadNotifications();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

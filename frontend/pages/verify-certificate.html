@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Certificate of Achievement — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+  <div id="nav-placeholder"></div>
+
+  <div class="container my-auto py-5">
+    <div class="text-center max-w-700 mx-auto mb-4">
+      <div class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold mb-2">
+        <i class="bi bi-patch-check-fill me-1"></i> Public Credential Verification
+      </div>
+      <h2 class="fw-bold text-dark">Certificate Verification Service</h2>
+      <p class="text-muted small">Verify the authenticity of examination credentials and passing certificates issued by the ExamPortal academic network.</p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 max-w-700 mx-auto p-4 mb-4">
+      <form id="verifyForm">
+        <div class="input-group input-group-lg">
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" id="certNumberInput" class="form-control border-start-0 font-monospace" placeholder="e.g. CERT-2026-ABC12345" required>
+          <button type="submit" class="btn btn-primary px-4 fw-semibold" id="verifyBtn" style="background:#4F46E5; border-color:#4F46E5;">
+            <span id="verifySpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+            <span>Verify</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div id="resultContainer" class="max-w-700 mx-auto d-none">
+      <!-- Injected Card -->
+    </div>
+  </div>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script>
+    fetch('/exam-portal/frontend/components/navbar.html').then(r=>r.text()).then(h=>document.getElementById('nav-placeholder').innerHTML=h);
+    fetch('/exam-portal/frontend/components/footer.html').then(r=>r.text()).then(h=>document.getElementById('footer-placeholder').innerHTML=h);
+
+    const urlCert = Utils.getQueryParam('cert') || Utils.getQueryParam('cert_number');
+    if (urlCert) {
+      document.getElementById('certNumberInput').value = urlCert;
+      performVerification(urlCert);
+    }
+
+    document.getElementById('verifyForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const num = document.getElementById('certNumberInput').value.trim();
+      if (num) performVerification(num);
+    });
+
+    async function performVerification(certNum) {
+      const container = document.getElementById('resultContainer');
+      const spinner = document.getElementById('verifySpinner');
+      const btn = document.getElementById('verifyBtn');
+
+      container.classList.add('d-none');
+      spinner.classList.remove('d-none');
+      btn.disabled = true;
+
+      try {
+        const resp = await ExamPortalAPI.certificate.verify(certNum);
+        const cert = resp.data.certificate;
+
+        container.innerHTML = `
+          <div class="card border-0 shadow rounded-4 overflow-hidden">
+            <div class="p-4 bg-success text-white d-flex align-items-center gap-3">
+              <i class="bi bi-patch-check-fill display-5"></i>
+              <div>
+                <h4 class="fw-bold mb-0">Authentic Certificate Verified</h4>
+                <div class="small opacity-75">Certificate Serial: ${cert.certificate_number}</div>
+              </div>
+            </div>
+            <div class="p-4 bg-white">
+              <div class="row g-3">
+                <div class="col-sm-6">
+                  <div class="text-muted small">Candidate Name</div>
+                  <div class="fw-bold fs-5 text-dark">${cert.student_name}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted small">Issued Institution</div>
+                  <div class="fw-bold text-dark">${cert.institution}</div>
+                </div>
+                <div class="col-12 border-top pt-3">
+                  <div class="text-muted small">Examination Completed</div>
+                  <div class="fw-bold fs-6 text-primary">${cert.exam_name}</div>
+                </div>
+                <div class="col-sm-4">
+                  <div class="text-muted small">Score Achieved</div>
+                  <div class="fw-bold text-dark">${cert.obtained_marks} / ${cert.total_marks}</div>
+                </div>
+                <div class="col-sm-4">
+                  <div class="text-muted small">Percentage</div>
+                  <div class="fw-bold text-success">${cert.percentage}% (PASS)</div>
+                </div>
+                <div class="col-sm-4">
+                  <div class="text-muted small">Issue Date</div>
+                  <div class="fw-bold text-dark">${cert.issued_date}</div>
+                </div>
+              </div>
+            </div>
+          </div>`;
+        container.classList.remove('d-none');
+      } catch (err) {
+        container.innerHTML = `
+          <div class="card border-0 shadow rounded-4 overflow-hidden">
+            <div class="p-4 bg-danger text-white d-flex align-items-center gap-3">
+              <i class="bi bi-x-octagon-fill display-5"></i>
+              <div>
+                <h4 class="fw-bold mb-0">Verification Failed</h4>
+                <div class="small opacity-75">${err.message || 'Certificate record not found.'}</div>
+              </div>
+            </div>
+          </div>`;
+        container.classList.remove('d-none');
+      } finally {
+        spinner.classList.add('d-none');
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

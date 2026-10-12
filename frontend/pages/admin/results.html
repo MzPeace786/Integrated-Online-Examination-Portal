@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Results — ExamPortal Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title d-flex align-items-center gap-2">
+            <i class="bi bi-card-checklist text-primary"></i>
+            <span>System Examination Results</span>
+          </h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/admin/dashboard.html">Admin</a></li>
+              <li class="breadcrumb-item active">Results</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/exam-portal/frontend/pages/admin/certificates.html" class="btn btn-outline-primary btn-sm fw-semibold">
+          <i class="bi bi-award me-1"></i> Certificate Ledger
+        </a>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- Top Metrics Grid -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-card-icon"><i class="bi bi-file-earmark-check-fill"></i></div>
+            <div class="stat-card-value" id="statTotalResults">0</div>
+            <div class="stat-card-label">Total Evaluated Results</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card success">
+            <div class="stat-card-icon"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="stat-card-value" id="statPassCount">0</div>
+            <div class="stat-card-label">Candidates Passed</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card danger">
+            <div class="stat-card-icon"><i class="bi bi-x-circle-fill"></i></div>
+            <div class="stat-card-value" id="statFailCount">0</div>
+            <div class="stat-card-label">Candidates Failed</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card info">
+            <div class="stat-card-icon"><i class="bi bi-graph-up"></i></div>
+            <div class="stat-card-value" id="statAvgScore">0%</div>
+            <div class="stat-card-label">Overall Average Score</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters & Search Toolbar -->
+      <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-5">
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" id="searchCandidateInput" class="form-control bg-light border-start-0" placeholder="Search candidate name or student ID..." oninput="filterResults()">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <select id="passFilterSelect" class="form-select bg-light" onchange="filterResults()">
+              <option value="">All Results (Pass & Fail)</option>
+              <option value="1">Passed Only</option>
+              <option value="0">Failed Only</option>
+            </select>
+          </div>
+          <div class="col-md-3 text-md-end">
+            <button class="btn btn-outline-secondary btn-sm w-100" onclick="loadResults()">
+              <i class="bi bi-arrow-clockwise me-1"></i> Refresh Ledger
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Table -->
+      <div class="ep-card">
+        <div class="ep-card-header d-flex justify-content-between align-items-center">
+          <h5 class="ep-card-title mb-0">Candidate Performance Ledger</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="ep-table mb-0">
+            <thead>
+              <tr>
+                <th>Candidate</th>
+                <th>Examination</th>
+                <th>Score</th>
+                <th>Percentage</th>
+                <th>Outcome</th>
+                <th>AI Proctoring Risk</th>
+                <th>Evaluated Date</th>
+                <th>Publish Status</th>
+              </tr>
+            </thead>
+            <tbody id="resultsTbody">
+              <tr><td colspan="8" class="text-center py-4 text-muted small">Loading system results...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['admin']);
+    Sidebar.load('admin', 'results');
+
+    let allResults = [];
+
+    document.addEventListener('DOMContentLoaded', loadResults);
+
+    async function loadResults() {
+      try {
+        const resp = await ExamPortalAPI.admin.getResults();
+        allResults = resp.data || [];
+
+        // Check if query param exam_id is given
+        const examIdParam = Utils.getQueryParam('exam_id');
+
+        // Metrics
+        document.getElementById('statTotalResults').textContent = allResults.length;
+        const passed = allResults.filter(r => r.is_passed == 1).length;
+        const failed = allResults.filter(r => r.is_passed == 0).length;
+        document.getElementById('statPassCount').textContent = passed;
+        document.getElementById('statFailCount').textContent = failed;
+
+        if (allResults.length > 0) {
+          const avg = allResults.reduce((sum, r) => sum + parseFloat(r.percentage || 0), 0) / allResults.length;
+          document.getElementById('statAvgScore').textContent = `${avg.toFixed(1)}%`;
+        }
+
+        filterResults(examIdParam);
+      } catch (err) {
+        Utils.showToast(err.message || 'Error loading results', 'error');
+      }
+    }
+
+    function filterResults(forceExamId = null) {
+      const q = document.getElementById('searchCandidateInput').value.toLowerCase().trim();
+      const pass = document.getElementById('passFilterSelect').value;
+
+      const filtered = allResults.filter(r => {
+        const matchesQ = !q || (r.student_name && r.student_name.toLowerCase().includes(q)) || (r.student_id_number && r.student_id_number.toLowerCase().includes(q)) || (r.exam_title && r.exam_title.toLowerCase().includes(q));
+        const matchesPass = pass === '' || String(r.is_passed) === pass;
+        const matchesExam = !forceExamId || String(r.exam_id) === String(forceExamId);
+        return matchesQ && matchesPass && matchesExam;
+      });
+
+      renderResultsTable(filtered);
+    }
+
+    function renderResultsTable(list) {
+      const tbody = document.getElementById('resultsTbody');
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">No candidate results match your criteria.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(r => {
+        const pct = parseFloat(r.percentage || 0);
+        const passBadge = r.is_passed == 1 
+          ? '<span class="badge bg-success">PASSED</span>' 
+          : '<span class="badge bg-danger">FAILED</span>';
+
+        const riskScore = parseInt(r.risk_score || 0);
+        const riskLevel = riskScore >= 60 ? 'high' : (riskScore >= 30 ? 'medium' : 'normal');
+
+        return `
+          <tr>
+            <td>
+              <strong class="text-dark">${r.student_name}</strong>
+              <div class="small text-muted font-monospace">${r.student_id_number || 'ID: #' + r.student_id}</div>
+            </td>
+            <td>
+              <div>${r.exam_title}</div>
+              <small class="text-muted">${r.subject_name || ''}</small>
+            </td>
+            <td>
+              <strong>${parseFloat(r.obtained_marks).toFixed(1)}</strong> / ${parseFloat(r.total_marks).toFixed(1)}
+            </td>
+            <td>
+              <strong class="${r.is_passed == 1 ? 'text-success' : 'text-danger'}">${pct.toFixed(2)}%</strong>
+            </td>
+            <td>${passBadge}</td>
+            <td>
+              ${r.risk_score !== null 
+                ? `${Utils.getRiskBadge(riskLevel)} <small class="text-muted">(${riskScore}/100)</small>`
+                : '<span class="text-muted small">No session</span>'}
+            </td>
+            <td class="small text-muted">${Utils.formatDateTime(r.evaluated_at)}</td>
+            <td>
+              <button class="btn btn-sm ${r.is_published == 1 ? 'btn-outline-success' : 'btn-outline-warning'} py-0 px-2" onclick="togglePublish(${r.id}, ${r.is_published})">
+                <i class="bi ${r.is_published == 1 ? 'bi-eye-fill' : 'bi-eye-slash'} me-1"></i>
+                ${r.is_published == 1 ? 'Published' : 'Hidden'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function togglePublish(resultId, currentStatus) {
+      try {
+        await ExamPortalAPI.admin.updateResult(resultId, { is_published: currentStatus == 1 ? 0 : 1 });
+        Utils.showToast('Result visibility updated', 'success');
+        await loadResults();
+      } catch (err) {
+        // Direct put fallback
+        try {
+          await ExamPortalAPI.examiner.publishResult(resultId, { is_published: currentStatus == 1 ? 0 : 1 });
+          Utils.showToast('Result visibility updated', 'success');
+          await loadResults();
+        } catch (_) {
+          Utils.showToast(err.message || 'Error updating status', 'error');
+        }
+      }
+    }
+  </script>
+</body>
+</html>

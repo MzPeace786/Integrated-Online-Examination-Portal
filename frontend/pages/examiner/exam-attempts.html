@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Candidate Attempts & Proctoring Audit — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title">Candidate Assessment Attempts</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/examiner/manage-exams.html">Exams</a></li>
+              <li class="breadcrumb-item active">Attempts</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <div class="ep-card">
+        <div class="ep-card-header">
+          <h5 class="ep-card-title">Candidate Attempt Ledger & AI Proctoring Risk</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="ep-table mb-0">
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>Roll No</th>
+                <th>Started At</th>
+                <th>Submitted At</th>
+                <th>Score</th>
+                <th>Result</th>
+                <th>AI Risk Score</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="attemptsTbody">
+              <tr><td colspan="8" class="text-center py-4 text-muted small">Loading student attempts...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['examiner', 'admin']);
+    Sidebar.load('examiner', 'manage-exams');
+
+    const examId = Utils.getQueryParam('id');
+    document.addEventListener('DOMContentLoaded', loadAttempts);
+
+    async function loadAttempts() {
+      try {
+        const resp = await ExamPortalAPI.examiner.getAttempts(examId || 1);
+        const tbody = document.getElementById('attemptsTbody');
+
+        if (!resp.data || resp.data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">No student attempts recorded for this examination yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = resp.data.map(a => `
+          <tr>
+            <td class="fw-semibold text-dark">${a.student_name}</td>
+            <td><span class="badge bg-light text-dark border">${a.student_id_number || 'N/A'}</span></td>
+            <td class="small text-muted">${Utils.formatDateTime(a.started_at)}</td>
+            <td class="small text-muted">${a.submitted_at ? Utils.formatDateTime(a.submitted_at) : '<span class="text-warning">In Progress</span>'}</td>
+            <td><strong>${a.percentage !== null ? a.percentage + '%' : 'Pending'}</strong></td>
+            <td>${a.is_passed !== null ? Utils.getStatusBadge(a.is_passed ? 'passed' : 'failed') : '—'}</td>
+            <td>
+              <span class="badge ${a.risk_score >= 60 ? 'bg-danger' : (a.risk_score >= 30 ? 'bg-warning text-dark' : 'bg-success')}">
+                Risk: ${a.risk_score || 0}/100 (${a.total_events || 0} events)
+              </span>
+            </td>
+            <td>
+              <a href="/exam-portal/frontend/pages/examiner/proctoring-reports.html?attempt_id=${a.id}" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size:0.75rem;">
+                Audit Log
+              </a>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        Utils.showToast(err.message || 'Error loading attempts', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

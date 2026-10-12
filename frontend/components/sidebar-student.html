@@ -1,0 +1,83 @@
+<aside class="sidebar" id="mainSidebar">
+  <div class="sidebar-header">
+    <a href="/exam-portal/frontend/pages/student/dashboard.html" class="sidebar-logo">
+      <i class="bi bi-shield-check"></i>
+      <span>ExamPortal</span>
+    </a>
+    <button class="sidebar-toggle-btn d-lg-none" id="sidebarToggleBtn">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <div class="sidebar-user">
+    <div class="sidebar-avatar d-flex align-items-center justify-content-center text-white font-weight-bold">
+      <i class="bi bi-person-fill fs-5"></i>
+    </div>
+    <div class="sidebar-user-info">
+      <div class="sidebar-user-name" id="sidebarUserName">Student</div>
+      <div class="sidebar-user-role" id="sidebarUserRole">STUDENT</div>
+    </div>
+  </div>
+
+  <ul class="sidebar-nav">
+    <div class="sidebar-nav-section">Main Menu</div>
+    <li>
+      <a href="/exam-portal/frontend/pages/student/dashboard.html" data-page="dashboard">
+        <i class="bi bi-grid-1x2-fill"></i>
+        <span>Dashboard</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/student/exams.html" data-page="exams">
+        <i class="bi bi-journal-check"></i>
+        <span>My Examinations</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/student/history.html" data-page="history">
+        <i class="bi bi-clock-history"></i>
+        <span>Exam History</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/student/analytics.html" data-page="analytics">
+        <i class="bi bi-graph-up-arrow"></i>
+        <span>Performance Analytics</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/student/certificates.html" data-page="certificates">
+        <i class="bi bi-award-fill"></i>
+        <span>Certificates</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/student/notifications.html" data-page="notifications">
+        <i class="bi bi-bell-fill"></i>
+        <span>Notifications</span>
+      </a>
+    </li>
+
+    <div class="sidebar-nav-section">Account & Privacy</div>
+    <li>
+      <a href="/exam-portal/frontend/pages/student/profile.html" data-page="profile">
+        <i class="bi bi-person-circle"></i>
+        <span>Profile Management</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/student/privacy.html" data-page="privacy">
+        <i class="bi bi-shield-lock-fill"></i>
+        <span>Privacy & Data</span>
+      </a>
+    </li>
+  </ul>
+
+  <div class="sidebar-footer">
+    <button class="btn btn-outline-light w-100 btn-sm d-flex align-items-center justify-content-center gap-2" id="sidebarLogoutBtn">
+      <i class="bi bi-box-arrow-right"></i>
+      <span>Sign Out</span>
+    </button>
+  </div>
+</aside>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>

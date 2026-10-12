@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+  <div id="nav-placeholder"></div>
+
+  <div class="container py-5 max-w-900 mx-auto">
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+      <h2 class="fw-bold text-dark mb-2">Platform Privacy Policy</h2>
+      <div class="text-muted small mb-4">Version 1.0 &bull; Effective Date: October 2026 &bull; Department of Computer Science and Engineering</div>
+
+      <h5 class="fw-bold text-primary mt-3">1. Information We Collect</h5>
+      <p class="text-muted small">We collect account information (name, institutional email, department, roll number), assessment responses, and computer vision proctoring metrics generated during active examinations.</p>
+
+      <h5 class="fw-bold text-primary mt-3">2. Purpose of Data Processing</h5>
+      <p class="text-muted small">Your data is processed strictly for authenticating candidates, providing examination interfaces, calculating assessment marks, issuing verifiable certificates, and providing examiners with audit logs to ensure academic fairness.</p>
+
+      <h5 class="fw-bold text-primary mt-3">3. Webcam and Biometric Processing</h5>
+      <p class="text-muted small">Webcam frames are processed in-memory for face detection and suspicious behavior indicators. We do not permanently record continuous video feeds. Snapshot capture is disabled by default and requires explicit administrator configuration with prior student notice.</p>
+
+      <h5 class="fw-bold text-primary mt-3">4. Data Retention & Deletion Rights</h5>
+      <p class="text-muted small">Student account records and certificates are retained based on institutional policies. You may inspect your personal records or submit a formal data deletion request through the Student Privacy Dashboard.</p>
+
+      <h5 class="fw-bold text-primary mt-3">5. Contact Information</h5>
+      <p class="text-muted small">For any privacy or data protection inquiries, contact the examination administrator at <a href="mailto:privacy@examportal.com">privacy@examportal.com</a>.</p>
+    </div>
+  </div>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    fetch('/exam-portal/frontend/components/navbar.html').then(r=>r.text()).then(h=>document.getElementById('nav-placeholder').innerHTML=h);
+    fetch('/exam-portal/frontend/components/footer.html').then(r=>r.text()).then(h=>document.getElementById('footer-placeholder').innerHTML=h);
+  </script>
+</body>
+</html>

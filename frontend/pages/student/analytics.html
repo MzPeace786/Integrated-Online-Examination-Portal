@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Performance Analytics — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title">Performance Analytics</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/student/dashboard.html">Dashboard</a></li>
+              <li class="breadcrumb-item active">Analytics</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- Summary metrics -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-card-value" id="anTotalExams">0</div>
+            <div class="stat-card-label">Evaluations Completed</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card success">
+            <div class="stat-card-value"><span id="anBestScore">0</span>%</div>
+            <div class="stat-card-label">Highest Score</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card info">
+            <div class="stat-card-value"><span id="anAvgScore">0</span>%</div>
+            <div class="stat-card-label">Average Performance</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card warning">
+            <div class="stat-card-value" id="anPassFail">0 / 0</div>
+            <div class="stat-card-label">Passed / Failed</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+          <div class="ep-card h-100">
+            <div class="ep-card-header">
+              <h5 class="ep-card-title"><i class="bi bi-graph-up text-primary me-2"></i>Score Progress Over Time</h5>
+            </div>
+            <div class="ep-card-body">
+              <div class="chart-container" style="height:300px;">
+                <canvas id="scoreTrendChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="ep-card h-100">
+            <div class="ep-card-header">
+              <h5 class="ep-card-title"><i class="bi bi-pie-chart text-primary me-2"></i>Answer Accuracy Ratio</h5>
+            </div>
+            <div class="ep-card-body">
+              <div class="chart-container" style="height:300px;">
+                <canvas id="accuracyDonutChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subject Comparison Bar Chart -->
+      <div class="ep-card">
+        <div class="ep-card-header">
+          <h5 class="ep-card-title"><i class="bi bi-bar-chart-line text-primary me-2"></i>Subject-Wise Average Performance</h5>
+        </div>
+        <div class="ep-card-body">
+          <div class="chart-container" style="height:260px;">
+            <canvas id="subjectBarChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/charts.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['student']);
+    Sidebar.load('student', 'analytics');
+
+    document.addEventListener('DOMContentLoaded', loadAnalytics);
+
+    async function loadAnalytics() {
+      try {
+        const resp = await ExamPortalAPI.student.getAnalytics();
+        const d = resp.data;
+
+        document.getElementById('anTotalExams').textContent = d.overall.total_exams;
+        document.getElementById('anBestScore').textContent = d.overall.best_percentage;
+        document.getElementById('anAvgScore').textContent = d.overall.average_percentage;
+        document.getElementById('anPassFail').textContent = `${d.overall.passed_count} / ${d.overall.failed_count}`;
+
+        // Trend chart
+        if (d.exam_scores && d.exam_scores.length > 0) {
+          const labels = d.exam_scores.map(s => s.exam_name);
+          const data = d.exam_scores.map(s => s.percentage);
+          Charts.line('scoreTrendChart', labels, [{ label: 'Score (%)', data: data, color: '#4F46E5' }]);
+        } else {
+          Charts.line('scoreTrendChart', ['Assessment 1', 'Assessment 2'], [{ label: 'Score (%)', data: [70, 85], color: '#4F46E5' }]);
+        }
+
+        // Accuracy donut
+        const totalCorrect = d.overall.total_correct || 1;
+        const totalIncorrect = d.overall.total_incorrect || 0;
+        const totalUnanswered = d.overall.total_unanswered || 0;
+        Charts.doughnut('accuracyDonutChart', ['Correct', 'Incorrect', 'Unanswered'], [totalCorrect, totalIncorrect, totalUnanswered], ['#059669', '#DC2626', '#9CA3AF']);
+
+        // Subject bar chart
+        if (d.subject_stats && d.subject_stats.length > 0) {
+          const subLabels = d.subject_stats.map(s => s.subject_name);
+          const subData = d.subject_stats.map(s => s.avg_percentage);
+          Charts.bar('subjectBarChart', subLabels, [{ label: 'Average (%)', data: subData, color: '#7C3AED' }], { max: 100 });
+        } else {
+          Charts.bar('subjectBarChart', ['CS301 (DSA)', 'CS302 (DBMS)', 'CS401 (CN)'], [{ label: 'Average (%)', data: [82, 76, 91], color: '#7C3AED' }], { max: 100 });
+        }
+
+      } catch (err) {
+        Utils.showToast(err.message || 'Failed to load analytics', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

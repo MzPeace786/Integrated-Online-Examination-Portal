@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam History — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title">Candidate Assessment History</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/student/dashboard.html">Dashboard</a></li>
+              <li class="breadcrumb-item active">History</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <div class="ep-card">
+        <div class="ep-card-header">
+          <h5 class="ep-card-title">Completed Examination Ledger</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="ep-table mb-0">
+            <thead>
+              <tr>
+                <th>Exam Title</th>
+                <th>Subject</th>
+                <th>Score</th>
+                <th>Percentage</th>
+                <th>Result</th>
+                <th>Time Spent</th>
+                <th>Evaluated Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="historyTbody">
+              <tr><td colspan="8" class="text-center py-4 text-muted small">Loading examination history...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="mt-4" id="paginationContainer"></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['student']);
+    Sidebar.load('student', 'history');
+
+    document.addEventListener('DOMContentLoaded', loadHistory);
+
+    async function loadHistory(page = 1) {
+      try {
+        const resp = await ExamPortalAPI.student.getResults({ page });
+        const tbody = document.getElementById('historyTbody');
+
+        if (!resp.data || resp.data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted small">No past examination records found.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = resp.data.map(r => `
+          <tr>
+            <td class="fw-semibold text-dark">${r.exam_title}</td>
+            <td><span class="badge bg-light text-dark border">${r.subject_name || 'General'}</span></td>
+            <td>${r.obtained_marks} / ${r.total_marks}</td>
+            <td><strong>${r.percentage}%</strong></td>
+            <td>${Utils.getStatusBadge(r.is_passed ? 'passed' : 'failed')}</td>
+            <td>${Utils.formatTime(r.time_taken_seconds || 0)}</td>
+            <td class="text-muted small">${Utils.formatDate(r.evaluated_at)}</td>
+            <td>
+              <a href="/exam-portal/frontend/pages/student/result.html?id=${r.id}" class="btn btn-outline-primary btn-sm py-1 px-2" style="font-size:0.78rem;">
+                View Scorecard
+              </a>
+            </td>
+          </tr>
+        `).join('');
+
+        if (resp.pagination) {
+          Utils.renderPagination('paginationContainer', resp.pagination.total, page, resp.pagination.per_page, loadHistory);
+        }
+      } catch (err) {
+        Utils.showToast(err.message || 'Failed to load history', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

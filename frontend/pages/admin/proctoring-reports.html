@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proctoring Audit Reports — ExamPortal Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <h1 class="page-title d-flex align-items-center gap-2">
+            <i class="bi bi-shield-check text-primary"></i>
+            <span>Proctoring Audit Reports</span>
+          </h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/admin/dashboard.html">Admin</a></li>
+              <li class="breadcrumb-item active">Proctoring Audits</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/exam-portal/frontend/pages/admin/live-proctoring.html" class="btn btn-outline-danger btn-sm fw-semibold">
+          <i class="bi bi-broadcast me-1"></i> Live Monitor
+        </a>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <div class="alert alert-info border-info d-flex gap-3 mb-4 small rounded-3">
+        <i class="bi bi-info-circle-fill fs-4 text-primary"></i>
+        <div>
+          <strong>AI-Assisted Irregularity Telemetry:</strong> All events (face absence, multiple people, looking away, tab switches) are captured with timestamps. High severity events influence candidate AI risk ratings.
+        </div>
+      </div>
+
+      <div class="ep-card">
+        <div class="table-responsive">
+          <table class="ep-table mb-0">
+            <thead>
+              <tr>
+                <th>Candidate</th>
+                <th>Examination</th>
+                <th>Status</th>
+                <th>Irregularities</th>
+                <th>High Severity</th>
+                <th>Risk Rating</th>
+                <th>Exam Date</th>
+              </tr>
+            </thead>
+            <tbody id="reportsTbody">
+              <tr><td colspan="7" class="text-center py-4 text-muted small">Loading proctoring reports...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['admin', 'examiner']);
+    Sidebar.load('admin', 'proctoring');
+
+    document.addEventListener('DOMContentLoaded', loadReports);
+
+    async function loadReports() {
+      try {
+        const resp = await ExamPortalAPI.examiner.getProctoringReports();
+        const tbody = document.getElementById('reportsTbody');
+
+        if (!resp.data || resp.data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No proctoring audit records logged yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = resp.data.map(r => `
+          <tr>
+            <td class="fw-semibold text-dark">${r.student_name} <br><small class="text-muted">${r.student_id_number || ''}</small></td>
+            <td>${r.exam_title}</td>
+            <td><span class="badge ${r.status === 'active' ? 'bg-success' : 'bg-secondary'}">${(r.status || 'ended').toUpperCase()}</span></td>
+            <td><strong>${r.total_events}</strong> events</td>
+            <td><span class="badge bg-danger">${r.high_severity_events}</span></td>
+            <td>${Utils.getRiskBadge(r.risk_score >= 60 ? 'high' : (r.risk_score >= 30 ? 'medium' : 'normal'))} (${r.risk_score}/100)</td>
+            <td class="small text-muted">${Utils.formatDateTime(r.started_at)}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        Utils.showToast(err.message || 'Error loading reports', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

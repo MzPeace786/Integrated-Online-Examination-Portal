@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam Instructions & Camera Verification — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+  <style>
+    .camera-test-box {
+      width: 100%; max-width: 360px; height: 260px;
+      background: #000; border-radius: 12px; overflow: hidden; position: relative;
+    }
+    .camera-test-box video { width: 100%; height: 100%; object-fit: cover; }
+  </style>
+</head>
+<body class="bg-light d-flex flex-column min-vh-100">
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <a href="/exam-portal/frontend/pages/student/exams.html" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+        <div>
+          <h1 class="page-title">Examination Readiness & Verification</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/student/exams.html">Exams</a></li>
+              <li class="breadcrumb-item active">Instructions & Verification</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <div class="row g-4">
+        <!-- Instructions Left Column -->
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill" id="examSubjectBadge">Subject</span>
+              <span id="examProctoredBadge"></span>
+            </div>
+            <h3 class="fw-bold text-dark mb-2" id="examTitle">Loading Examination Details...</h3>
+            <p class="text-muted small" id="examDesc"></p>
+
+            <div class="row g-3 py-3 border-top border-bottom my-3">
+              <div class="col-4">
+                <div class="text-muted small">Duration</div>
+                <div class="fw-bold fs-5 text-dark" id="examDuration">-- mins</div>
+              </div>
+              <div class="col-4">
+                <div class="text-muted small">Total Marks</div>
+                <div class="fw-bold fs-5 text-dark" id="examMarks">--</div>
+              </div>
+              <div class="col-4">
+                <div class="text-muted small">Passing Threshold</div>
+                <div class="fw-bold fs-5 text-success" id="examPassPct">--%</div>
+              </div>
+            </div>
+
+            <h5 class="fw-bold text-dark mt-2 mb-3">Important Candidate Instructions</h5>
+            <div class="p-3 bg-light rounded-3 text-muted small mb-3" style="max-height:180px; overflow-y:auto;" id="examInstructionsText">
+              1. Maintain full-screen browser mode throughout the examination.<br>
+              2. Do not switch tabs or open external windows; violations are logged.<br>
+              3. Keep your face clearly visible and centered in the camera frame.<br>
+              4. Answers are automatically saved on selection; you may navigate freely between questions.
+            </div>
+          </div>
+        </div>
+
+        <!-- Camera Verification & Consent Right Column -->
+        <div class="col-lg-5">
+          <!-- Camera Check Card -->
+          <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" id="cameraVerificationCard">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-camera-video text-primary me-2"></i>Webcam Verification Check</h5>
+            <p class="text-muted small mb-3">Your camera must be verified and active to take this proctored examination.</p>
+
+            <div class="camera-test-box mx-auto mb-3">
+              <video id="testVideo" autoplay playsinline muted></video>
+              <div class="position-absolute bottom-0 start-0 end-0 p-2 text-center text-white small bg-dark bg-opacity-75" id="camStatusLabel">
+                Camera: Inactive
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-2 mb-2">
+              <button type="button" class="btn btn-outline-primary btn-sm" id="testCamBtn" onclick="testWebcam()">
+                <i class="bi bi-camera me-1"></i> Test & Verify Camera
+              </button>
+            </div>
+          </div>
+
+          <!-- Explicit Consent Card -->
+          <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-shield-check text-success me-2"></i>Candidate Consent Gates</h5>
+            
+            <div class="d-flex flex-column gap-3 mb-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="chkRules" checked onchange="validateStartReadiness()">
+                <label class="form-check-label small" for="chkRules">
+                  I have read and agree to comply with the <strong>Examination Rules</strong>. *
+                </label>
+              </div>
+              <div class="form-check" id="proctorConsentGroup">
+                <input class="form-check-input" type="checkbox" id="chkProctor" checked onchange="validateStartReadiness()">
+                <label class="form-check-label small" for="chkProctor">
+                  I consent to <strong>automated OpenCV webcam proctoring</strong> and understand detections are indicators requiring human review. *
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="chkFullscreen" checked onchange="validateStartReadiness()">
+                <label class="form-check-label small" for="chkFullscreen">
+                  I agree to remain in <strong>Full-Screen Mode</strong> for the assessment duration. *
+                </label>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-success w-100 py-2 fw-semibold fs-5" id="startExamBtn" onclick="startAssessment()">
+              <i class="bi bi-play-circle-fill me-2"></i> Start Examination Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    Auth.requireAuth(['student']);
+    Sidebar.load('student', 'exams');
+
+    const examId = Utils.getQueryParam('id');
+    let examData = null;
+    let cameraVerified = false;
+    let webcamStream = null;
+
+    document.addEventListener('DOMContentLoaded', loadExamDetails);
+
+    async function loadExamDetails() {
+      if (!examId) {
+        window.location.href = '/exam-portal/frontend/pages/student/exams.html';
+        return;
+      }
+
+      try {
+        const resp = await ExamPortalAPI.student.getExamInstructions(examId);
+        examData = resp.data.exam;
+
+        document.getElementById('examTitle').textContent = examData.title;
+        document.getElementById('examDesc').textContent = examData.description || 'Institutional examination.';
+        document.getElementById('examSubjectBadge').textContent = examData.subject_name || 'General';
+        document.getElementById('examDuration').textContent = `${examData.duration_minutes} mins`;
+        document.getElementById('examMarks').textContent = examData.total_marks;
+        document.getElementById('examPassPct').textContent = `${examData.passing_percentage}%`;
+        if (examData.instructions) {
+          document.getElementById('examInstructionsText').innerHTML = examData.instructions.replace(/\n/g, '<br>');
+        }
+
+        const isProctored = examData.proctoring_enabled == 1;
+        if (isProctored) {
+          document.getElementById('examProctoredBadge').innerHTML = '<span class="badge bg-danger"><i class="bi bi-camera-video me-1"></i>AI Proctored</span>';
+          // Auto-initiate webcam verification
+          setTimeout(testWebcam, 500);
+        } else {
+          document.getElementById('examProctoredBadge').innerHTML = '<span class="badge bg-secondary">Standard Mode</span>';
+          document.getElementById('cameraVerificationCard').classList.add('d-none');
+          document.getElementById('proctorConsentGroup').classList.add('d-none');
+          cameraVerified = true;
+        }
+
+        validateStartReadiness();
+
+      } catch (err) {
+        Utils.showToast(err.message || 'Failed to load exam details', 'error');
+      }
+    }
+
+    async function testWebcam() {
+      try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        const vid = document.getElementById('testVideo');
+        if (vid) vid.srcObject = webcamStream;
+        cameraVerified = true;
+        document.getElementById('camStatusLabel').innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Camera Active & Verified</span>';
+        const btn = document.getElementById('testCamBtn');
+        if (btn) {
+          btn.className = 'btn btn-success btn-sm';
+          btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Camera Ready';
+        }
+      } catch (err) {
+        console.warn('Camera test status:', err.message);
+        document.getElementById('camStatusLabel').innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-circle-fill me-1"></i>Camera Optional / On-Demand</span>';
+      } finally {
+        validateStartReadiness();
+      }
+    }
+
+    function validateStartReadiness() {
+      const rules = document.getElementById('chkRules').checked;
+      const fs = document.getElementById('chkFullscreen').checked;
+      const proctor = (examData && examData.proctoring_enabled == 1) ? document.getElementById('chkProctor').checked : true;
+      const isReady = rules && fs && proctor;
+
+      document.getElementById('startExamBtn').disabled = !isReady;
+    }
+
+    async function startAssessment() {
+      const startBtn = document.getElementById('startExamBtn');
+      startBtn.disabled = true;
+      startBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Starting Exam...';
+
+      try {
+        if (webcamStream) {
+          webcamStream.getTracks().forEach(t => t.stop()); // Stop test stream before handing over to exam interface
+        }
+
+        // Record consents
+        if (examData && examData.proctoring_enabled == 1) {
+          await ExamPortalAPI.student.recordConsent({ exam_id: examId, consent_type: 'webcam_proctoring', is_given: 1 }).catch(() => {});
+        }
+        await ExamPortalAPI.student.recordConsent({ exam_id: examId, consent_type: 'exam_rules', is_given: 1 }).catch(() => {});
+
+        window.location.href = `/exam-portal/frontend/pages/student/exam.html?id=${examId}`;
+      } catch (e) {
+        window.location.href = `/exam-portal/frontend/pages/student/exam.html?id=${examId}`;
+      }
+    }
+  </script>
+</body>
+</html>

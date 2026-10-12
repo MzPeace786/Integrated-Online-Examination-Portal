@@ -1,0 +1,111 @@
+<aside class="sidebar" id="mainSidebar">
+  <div class="sidebar-header">
+    <a href="/exam-portal/frontend/pages/admin/dashboard.html" class="sidebar-logo">
+      <i class="bi bi-shield-lock-fill"></i>
+      <span>AdminPortal</span>
+    </a>
+    <button class="sidebar-toggle-btn d-lg-none" id="sidebarToggleBtn">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <div class="sidebar-user">
+    <div class="sidebar-avatar d-flex align-items-center justify-content-center text-white font-weight-bold" style="background:#7C3AED;">
+      <i class="bi bi-shield-check fs-5"></i>
+    </div>
+    <div class="sidebar-user-info">
+      <div class="sidebar-user-name" id="sidebarUserName">Administrator</div>
+      <div class="sidebar-user-role" id="sidebarUserRole">ADMIN</div>
+    </div>
+  </div>
+
+  <ul class="sidebar-nav">
+    <div class="sidebar-nav-section">Overview</div>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/dashboard.html" data-page="dashboard">
+        <i class="bi bi-speedometer2"></i>
+        <span>Admin Dashboard</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/live-proctoring.html" data-page="live-proctoring">
+        <i class="bi bi-broadcast text-danger"></i>
+        <span>Live Proctoring Monitor</span>
+      </a>
+    </li>
+
+    <div class="sidebar-nav-section">User & Academic Management</div>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/user-management.html" data-page="users">
+        <i class="bi bi-people-fill"></i>
+        <span>User Accounts</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/subject-management.html" data-page="academics">
+        <i class="bi bi-book-half"></i>
+        <span>Courses & Subjects</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/exam-management.html" data-page="exams">
+        <i class="bi bi-journal-album"></i>
+        <span>All Examinations</span>
+      </a>
+    </li>
+
+    <div class="sidebar-nav-section">Assessment & Verification</div>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/results.html" data-page="results">
+        <i class="bi bi-card-checklist"></i>
+        <span>System Results</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/certificates.html" data-page="certificates">
+        <i class="bi bi-award-fill"></i>
+        <span>Certificate Ledger</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/proctoring-reports.html" data-page="proctoring">
+        <i class="bi bi-camera-video-fill"></i>
+        <span>Proctoring Audits</span>
+      </a>
+    </li>
+
+    <div class="sidebar-nav-section">Security & Compliance</div>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/audit-logs.html" data-page="audit-logs">
+        <i class="bi bi-list-columns-reverse"></i>
+        <span>Audit Logs</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/security-logs.html" data-page="security-logs">
+        <i class="bi bi-shield-shaded"></i>
+        <span>Security Logs</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/settings.html" data-page="settings">
+        <i class="bi bi-gear-fill"></i>
+        <span>System Settings</span>
+      </a>
+    </li>
+    <li>
+      <a href="/exam-portal/frontend/pages/admin/deletion-requests.html" data-page="deletion-requests">
+        <i class="bi bi-trash3-fill"></i>
+        <span>Data Deletion Requests</span>
+      </a>
+    </li>
+  </ul>
+
+  <div class="sidebar-footer">
+    <button class="btn btn-outline-light w-100 btn-sm d-flex align-items-center justify-content-center gap-2" id="sidebarLogoutBtn">
+      <i class="bi bi-box-arrow-right"></i>
+      <span>Sign Out</span>
+    </button>
+  </div>
+</aside>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>

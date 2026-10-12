@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Question Bank & AI Suggester — ExamPortal</title>
+  <script>
+    // Merged into unified Question Bank Dashboard: forward smoothly
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('tab')) params.set('tab', 'ai');
+    window.location.replace('/exam-portal/frontend/pages/examiner/question-bank.html?' + params.toString());
+  </script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+  <style>
+    .ai-badge {
+      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .generator-card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+    .generator-header {
+      background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+      color: #FFFFFF;
+      padding: 24px 30px;
+    }
+    .question-card {
+      border: 1.5px solid #E2E8F0;
+      border-radius: 12px;
+      background: #FFFFFF;
+      transition: all 0.2s ease;
+    }
+    .question-card:hover {
+      border-color: #6366F1;
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.08);
+    }
+    .question-card.selected {
+      border-color: #4F46E5;
+      background: #FAFAFF;
+    }
+    .opt-pill {
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      border: 1px solid #E2E8F0;
+      background: #F8FAFC;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .opt-pill.correct {
+      background: #ECFDF5;
+      border-color: #10B981;
+      color: #065F46;
+      font-weight: 600;
+    }
+    .testcase-box {
+      background: #0F172A;
+      color: #94A3B8;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn"><i class="bi bi-list fs-4"></i></button>
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <h1 class="page-title mb-0">Automated Question Bank & AI Suggester</h1>
+            <span class="ai-badge"><i class="bi bi-magic me-1"></i> AI Powered</span>
+          </div>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item"><a href="/exam-portal/frontend/pages/examiner/dashboard.html">Examiner</a></li>
+              <li class="breadcrumb-item active">Auto Question Generator</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-area max-w-1100 mx-auto">
+      
+      <!-- Generator Configuration Card -->
+      <div class="generator-card mb-4">
+        <div class="generator-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h4 class="fw-bold mb-1"><i class="bi bi-cpu me-2"></i>Curriculum Question Synthesis</h4>
+              <p class="mb-0 text-white-50 small">Specify a subject and syllabus details to automatically generate syllabus-aligned questions.</p>
+            </div>
+            <div class="d-none d-md-block text-end">
+              <span class="badge bg-white bg-opacity-20 px-3 py-2 text-white fw-semibold">
+                <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Instant Batch Generation
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 p-md-5">
+          <form id="suggestForm">
+            <div class="row g-3">
+              
+              <!-- Subject Selection -->
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Select Subject <span class="text-danger">*</span></label>
+                <select id="genSubjectSelect" class="form-select" required onchange="handleSubjectChange()">
+                  <option value="">-- Choose Subject --</option>
+                  <option value="Data Structures and Algorithms" data-id="1">Data Structures and Algorithms (CS301)</option>
+                  <option value="Database Management Systems" data-id="2">Database Management Systems (CS302)</option>
+                  <option value="Operating Systems" data-id="3">Operating Systems (CS303)</option>
+                  <option value="Computer Networks" data-id="4">Computer Networks (CS401)</option>
+                  <option value="Software Engineering" data-id="5">Software Engineering (CS402)</option>
+                  <option value="Web Technologies" data-id="6">Web Technologies & Full Stack (CS501)</option>
+                  <option value="Artificial Intelligence" data-id="7">Artificial Intelligence & ML (CS601)</option>
+                  <option value="Discrete Mathematics" data-id="10">Discrete Mathematics (MA201)</option>
+                  <option value="custom">-- Custom / Other Subject --</option>
+                </select>
+              </div>
+
+              <!-- Custom Subject Name (hidden unless selected) -->
+              <div class="col-md-6" id="customSubjectGroup" style="display:none;">
+                <label class="form-label fw-bold">Enter Custom Subject Name <span class="text-danger">*</span></label>
+                <input type="text" id="customSubjectName" class="form-control" placeholder="e.g. Cloud Computing, Cyber Security, Blockchain">
+              </div>
+
+              <!-- Topic / Syllabus Details -->
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Specific Topic / Syllabus Details <span class="text-muted fw-normal">(Optional)</span></label>
+                <input type="text" id="genTopicInput" class="form-control" placeholder="e.g. Binary Search Trees, SQL Joins, Deadlocks, Paging">
+                <div class="form-text small" id="topicSuggestionsText">Leave blank for comprehensive subject coverage or enter key units.</div>
+              </div>
+
+              <!-- Difficulty Level -->
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Difficulty Profile</label>
+                <select id="genDifficulty" class="form-select">
+                  <option value="mixed" selected>Mixed (Balanced Exam Distribution)</option>
+                  <option value="easy">Easy (Definitions & Fundamental Concepts)</option>
+                  <option value="medium">Medium (Analytical & Implementation)</option>
+                  <option value="hard">Hard (Advanced & Complex Edge Cases)</option>
+                </select>
+              </div>
+
+              <!-- Question Types -->
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Question Format</label>
+                <select id="genQuestionType" class="form-select">
+                  <option value="all" selected>All Formats (MCQ, T/F, Short Answer, Coding)</option>
+                  <option value="mcq">Multiple Choice Questions (MCQ Only)</option>
+                  <option value="true_false">True / False Only</option>
+                  <option value="short_answer">Short Answer / Conceptual</option>
+                  <option value="coding">Practical Coding Problems</option>
+                </select>
+              </div>
+
+              <!-- Number of Questions -->
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Quantity</label>
+                <select id="genCount" class="form-select">
+                  <option value="5" selected>5 Questions</option>
+                  <option value="10">10 Questions</option>
+                  <option value="15">15 Questions</option>
+                  <option value="20">20 Questions</option>
+                </select>
+              </div>
+
+              <!-- Target Question Bank / Exam -->
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Target Question Bank</label>
+                <select id="targetBankSelect" class="form-select">
+                  <option value="new">+ Create New Bank Automatically</option>
+                </select>
+              </div>
+
+              <!-- Link Directly to Exam -->
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Directly Link to Exam <span class="text-muted fw-normal">(Optional)</span></label>
+                <select id="targetExamSelect" class="form-select">
+                  <option value="">-- None (Save to Bank Only) --</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+              <div class="small text-muted">
+                <i class="bi bi-info-circle me-1"></i> Questions include complete answer keys, distractors, and solution rationales.
+              </div>
+              <button type="submit" id="generateBtn" class="btn btn-primary px-4 py-2 fw-bold shadow-sm" style="background:#4F46E5;">
+                <i class="bi bi-magic me-2"></i> Generate & Suggest Questions
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Generated Questions Review Area (Initially Hidden) -->
+      <div id="resultsSection" style="display: none;">
+        
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+          <div>
+            <h4 class="fw-bold text-dark mb-0">
+              <i class="bi bi-check2-all text-primary me-2"></i>Suggested Questions Review
+            </h4>
+            <div class="text-muted small mt-1" id="resultsCountText">Showing generated questions</div>
+          </div>
+          
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleSelectAll(true)">Select All</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleSelectAll(false)">Deselect All</button>
+            <button class="btn btn-success btn-sm px-3 fw-bold" onclick="importSelectedQuestions()">
+              <i class="bi bi-cloud-arrow-down-fill me-1"></i> Import Selected Questions (<span id="selectedCountBadge">0</span>)
+            </button>
+          </div>
+        </div>
+
+        <!-- Questions Container -->
+        <div id="questionsContainer" class="d-flex flex-column gap-3 mb-4"></div>
+
+        <!-- Bottom Action Bar -->
+        <div class="card border-0 shadow-sm p-4 rounded-4 bg-white d-flex flex-row justify-content-between align-items-center mb-5">
+          <div>
+            <h6 class="fw-bold mb-1">Ready to Save?</h6>
+            <div class="text-muted small">Imported questions will be immediately available in your Question Bank and linked to exams.</div>
+          </div>
+          <button class="btn btn-success px-4 py-2 fw-bold shadow-sm" onclick="importSelectedQuestions()">
+            <i class="bi bi-check-circle-fill me-2"></i> Finalize & Import Selected Questions
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+
+  <script>
+    Auth.requireAuth(['examiner', 'admin']);
+    Sidebar.load('examiner', 'auto-question-generator');
+
+    let currentQuestions = [];
+    let selectedIndices = new Set();
+    let loadedQuestionBanks = [];
+    let loadedExams = [];
+
+    document.addEventListener('DOMContentLoaded', initPage);
+
+    async function initPage() {
+      await loadQuestionBanks();
+      await loadExams();
+
+      // Check URL parameters (e.g. ?exam_id=2 or ?subject_id=1)
+      const urlExamId = Utils.getQueryParam('exam_id');
+      const urlSubjectId = Utils.getQueryParam('subject_id');
+
+      if (urlSubjectId) {
+        const sel = document.getElementById('genSubjectSelect');
+        for (let opt of sel.options) {
+          if (opt.getAttribute('data-id') === urlSubjectId) {
+            sel.value = opt.value;
+            break;
+          }
+        }
+      }
+
+      if (urlExamId) {
+        document.getElementById('targetExamSelect').value = urlExamId;
+      }
+
+      document.getElementById('suggestForm').addEventListener('submit', handleGenerateQuestions);
+    }
+
+    function handleSubjectChange() {
+      const val = document.getElementById('genSubjectSelect').value;
+      const customGroup = document.getElementById('customSubjectGroup');
+      if (val === 'custom') {
+        customGroup.style.display = 'block';
+        document.getElementById('customSubjectName').required = true;
+      } else {
+        customGroup.style.display = 'none';
+        document.getElementById('customSubjectName').required = false;
+      }
+    }
+
+    async function loadQuestionBanks() {
+      try {
+        const resp = await ExamPortalAPI.examiner.getQuestionBanks();
+        loadedQuestionBanks = resp.data || [];
+        const sel = document.getElementById('targetBankSelect');
+        sel.innerHTML = '<option value="new">+ Create New Question Bank Automatically</option>';
+        loadedQuestionBanks.forEach(b => {
+          sel.innerHTML += `<option value="${b.id}">${b.name} (${b.questions_count || 0} questions)</option>`;
+        });
+      } catch (_) {}
+    }
+
+    async function loadExams() {
+      try {
+        const resp = await ExamPortalAPI.examiner.getExams();
+        loadedExams = resp.data || [];
+        const sel = document.getElementById('targetExamSelect');
+        sel.innerHTML = '<option value="">-- None (Save to Bank Only) --</option>';
+        loadedExams.forEach(e => {
+          sel.innerHTML += `<option value="${e.id}">${e.title}</option>`;
+        });
+      } catch (_) {}
+    }
+
+    async function handleGenerateQuestions(e) {
+      e.preventDefault();
+
+      let subjectName = document.getElementById('genSubjectSelect').value;
+      let subjectId = null;
+
+      if (subjectName === 'custom') {
+        subjectName = document.getElementById('customSubjectName').value.trim();
+      } else {
+        const opt = document.getElementById('genSubjectSelect').selectedOptions[0];
+        subjectId = opt ? opt.getAttribute('data-id') : null;
+      }
+
+      if (!subjectName) {
+        Utils.showToast('Please specify a subject name', 'warning');
+        return;
+      }
+
+      const topicDetails = document.getElementById('genTopicInput').value.trim();
+      const difficulty = document.getElementById('genDifficulty').value;
+      const questionType = document.getElementById('genQuestionType').value;
+      const count = parseInt(document.getElementById('genCount').value) || 5;
+
+      const btn = document.getElementById('generateBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Synthesizing Questions...';
+
+      try {
+        const resp = await ExamPortalAPI.examiner.suggestQuestions({
+          subject_name: subjectName,
+          subject_id: subjectId,
+          topic: topicDetails,
+          difficulty: difficulty,
+          question_type: questionType,
+          count: count
+        });
+
+        currentQuestions = resp.data || [];
+        selectedIndices = new Set(currentQuestions.map((_, i) => i));
+
+        renderSuggestedQuestions();
+        document.getElementById('resultsSection').style.display = 'block';
+        document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+
+        Utils.showToast(`Generated ${currentQuestions.length} syllabus-aligned questions!`, 'success');
+      } catch (err) {
+        Utils.showToast(err.message || 'Error generating questions', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-magic me-2"></i> Generate & Suggest Questions';
+      }
+    }
+
+    function renderSuggestedQuestions() {
+      const container = document.getElementById('questionsContainer');
+      document.getElementById('selectedCountBadge').textContent = selectedIndices.size;
+      document.getElementById('resultsCountText').textContent = `Synthesized ${currentQuestions.length} questions. ${selectedIndices.size} selected for import.`;
+
+      if (currentQuestions.length === 0) {
+        container.innerHTML = '<div class="text-center py-5 text-muted">No questions generated. Try adjusting topics.</div>';
+        return;
+      }
+
+      container.innerHTML = currentQuestions.map((q, idx) => {
+        const isSelected = selectedIndices.has(idx);
+        const diffBadge = q.difficulty === 'easy' ? 'bg-success-subtle text-success border border-success-subtle' :
+                          q.difficulty === 'hard' ? 'bg-danger-subtle text-danger border border-danger-subtle' :
+                          'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+
+        let optionsHtml = '';
+        if (q.question_type === 'mcq' || q.question_type === 'multiple_correct' || q.question_type === 'true_false') {
+          optionsHtml = `
+            <div class="row g-2 mt-2">
+              ${(q.options || []).map(opt => `
+                <div class="col-md-6">
+                  <div class="opt-pill ${opt.is_correct ? 'correct' : ''}">
+                    <i class="bi ${opt.is_correct ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'}"></i>
+                    <span>${opt.text || opt.option_text || ''}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else if (q.question_type === 'coding') {
+          optionsHtml = `
+            <div class="mt-2">
+              <span class="small fw-bold text-muted">Automated Test Cases:</span>
+              ${(q.test_cases || []).map(tc => `
+                <div class="testcase-box mt-1">
+                  Input: <code>${tc.input || ''}</code> | Expected: <code>${tc.output || ''}</code>
+                  ${tc.is_hidden ? '<span class="badge bg-secondary ms-2">Hidden</span>' : ''}
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        return `
+          <div class="question-card p-4 ${isSelected ? 'selected' : ''}" id="qCard_${idx}">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <input class="form-check-input mt-0" type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleQuestionSelect(${idx}, this.checked)">
+                <span class="fw-bold text-dark">#${idx + 1}</span>
+                <span class="badge bg-light text-dark border fw-bold">${q.question_type.toUpperCase()}</span>
+                <span class="badge ${diffBadge} fw-bold">${q.difficulty.toUpperCase()}</span>
+                <span class="badge bg-light text-muted border">${q.marks} Marks</span>
+              </div>
+              <div>
+                <button class="btn btn-outline-danger btn-sm py-0 px-2" onclick="removeQuestion(${idx})" title="Remove from import"><i class="bi bi-trash"></i></button>
+              </div>
+            </div>
+
+            <div class="question-text fw-semibold text-dark mt-2 mb-2" style="font-size: 1.02rem;">
+              ${q.question_text}
+            </div>
+
+            ${optionsHtml}
+
+            ${q.explanation ? `
+              <div class="small text-muted mt-3 pt-2 border-top">
+                <i class="bi bi-lightbulb-fill text-warning me-1"></i><strong>Solution Explanation:</strong> ${q.explanation}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleQuestionSelect(idx, isChecked) {
+      if (isChecked) selectedIndices.add(idx);
+      else selectedIndices.delete(idx);
+      
+      const card = document.getElementById(`qCard_${idx}`);
+      if (card) {
+        if (isChecked) card.classList.add('selected');
+        else card.classList.remove('selected');
+      }
+
+      document.getElementById('selectedCountBadge').textContent = selectedIndices.size;
+    }
+
+    function toggleSelectAll(select) {
+      if (select) {
+        selectedIndices = new Set(currentQuestions.map((_, i) => i));
+      } else {
+        selectedIndices.clear();
+      }
+      renderSuggestedQuestions();
+    }
+
+    function removeQuestion(idx) {
+      currentQuestions.splice(idx, 1);
+      selectedIndices.delete(idx);
+      // Re-index remaining
+      selectedIndices = new Set(currentQuestions.map((_, i) => i));
+      renderSuggestedQuestions();
+    }
+
+    async function importSelectedQuestions() {
+      if (selectedIndices.size === 0) {
+        Utils.showToast('Please select at least one question to import', 'warning');
+        return;
+      }
+
+      const selectedQuestions = Array.from(selectedIndices).map(i => currentQuestions[i]);
+      const bankChoice = document.getElementById('targetBankSelect').value;
+      const examChoice = document.getElementById('targetExamSelect').value;
+
+      let subjectId = null;
+      const sel = document.getElementById('genSubjectSelect');
+      if (sel.value !== 'custom') {
+        const opt = sel.selectedOptions[0];
+        subjectId = opt ? parseInt(opt.getAttribute('data-id')) : null;
+      }
+
+      const payload = {
+        questions: selectedQuestions,
+        subject_id: subjectId,
+        question_bank_id: bankChoice === 'new' ? null : parseInt(bankChoice),
+        bank_name: `${sel.value} Question Bank (${new Date().toLocaleDateString()})`,
+        exam_id: examChoice ? parseInt(examChoice) : null
+      };
+
+      Utils.showLoading('Importing questions into database...');
+
+      try {
+        const resp = await ExamPortalAPI.examiner.bulkImportQuestions(payload);
+        Utils.showToast(`Success! Imported ${resp.data.imported_count} questions.`, 'success');
+        
+        setTimeout(() => {
+          if (examChoice) {
+            window.location.href = `/exam-portal/frontend/pages/examiner/manage-exams.html`;
+          } else {
+            window.location.href = `/exam-portal/frontend/pages/examiner/create-question.html?bank_id=${resp.data.question_bank_id}`;
+          }
+        }, 1500);
+
+      } catch (err) {
+        Utils.showToast(err.message || 'Error importing questions', 'error');
+      } finally {
+        Utils.hideLoading();
+      }
+    }
+  </script>
+</body>
+</html>

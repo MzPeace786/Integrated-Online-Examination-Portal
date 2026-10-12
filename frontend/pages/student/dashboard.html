@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle-btn d-lg-none" id="mobileMenuBtn">
+          <i class="bi bi-list fs-4"></i>
+        </button>
+        <div>
+          <h1 class="page-title">Candidate Dashboard</h1>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="#">Portal</a></li>
+              <li class="breadcrumb-item active">Dashboard</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <a href="/exam-portal/frontend/pages/student/notifications.html" class="btn btn-light position-relative btn-sm rounded-circle p-2">
+          <i class="bi bi-bell fs-6"></i>
+          <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none" id="headerNotifDot"></span>
+        </a>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- Welcome Banner -->
+      <div class="card border-0 rounded-4 p-4 text-white mb-4 shadow-sm" style="background: linear-gradient(135deg, #1E1B4B 0%, #4F46E5 100%);">
+        <div class="row align-items-center">
+          <div class="col-lg-8">
+            <h3 class="fw-bold mb-1">Welcome back, <span id="studentGreetingName">Student</span>! 👋</h3>
+            <p class="small text-light opacity-75 mb-0">Check upcoming exams, review your past evaluations, and track your assessment analytics.</p>
+          </div>
+          <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+            <a href="/exam-portal/frontend/pages/student/exams.html" class="btn btn-light btn-sm fw-semibold text-primary px-3">
+              <i class="bi bi-journal-text me-1"></i> View Available Exams
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-card-icon"><i class="bi bi-journal-bookmark-fill"></i></div>
+            <div class="stat-card-value" id="statTotalExams">0</div>
+            <div class="stat-card-label">Total Exams Taken</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card success">
+            <div class="stat-card-icon"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="stat-card-value"><span id="statAvgScore">0</span>%</div>
+            <div class="stat-card-label">Average Score</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card info">
+            <div class="stat-card-icon"><i class="bi bi-award-fill"></i></div>
+            <div class="stat-card-value" id="statCertificates">0</div>
+            <div class="stat-card-label">Certificates Earned</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card warning">
+            <div class="stat-card-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-card-value" id="statUpcoming">0</div>
+            <div class="stat-card-label">Upcoming Scheduled</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts & Upcoming Section -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+          <div class="ep-card h-100">
+            <div class="ep-card-header">
+              <h5 class="ep-card-title"><i class="bi bi-activity text-primary me-2"></i>Performance History</h5>
+            </div>
+            <div class="ep-card-body">
+              <div class="chart-container" style="height:280px;">
+                <canvas id="performanceChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="ep-card h-100">
+            <div class="ep-card-header">
+              <h5 class="ep-card-title"><i class="bi bi-calendar-event text-primary me-2"></i>Upcoming Exams</h5>
+            </div>
+            <div class="ep-card-body p-0">
+              <div id="upcomingExamsList" class="p-3 d-flex flex-column gap-2">
+                <div class="text-center py-4 text-muted small">Loading scheduled exams...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Results Table -->
+      <div class="ep-card">
+        <div class="ep-card-header">
+          <h5 class="ep-card-title"><i class="bi bi-card-checklist text-primary me-2"></i>Recent Examination Results</h5>
+          <a href="/exam-portal/frontend/pages/student/history.html" class="small text-decoration-none fw-semibold">View All History &rarr;</a>
+        </div>
+        <div class="table-responsive">
+          <table class="ep-table mb-0">
+            <thead>
+              <tr>
+                <th>Examination Title</th>
+                <th>Subject</th>
+                <th>Obtained Score</th>
+                <th>Percentage</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="recentResultsTbody">
+              <tr><td colspan="7" class="text-center py-4 text-muted small">Loading recent results...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script src="/exam-portal/frontend/public/js/charts.js"></script>
+  <script src="/exam-portal/frontend/public/js/sidebar.js"></script>
+  <script>
+    const user = Auth.requireAuth(['student']);
+    if (user) {
+      Sidebar.load('student', 'dashboard');
+      loadDashboardData();
+    }
+
+    async function loadDashboardData() {
+      try {
+        const resp = await ExamPortalAPI.student.dashboard();
+        const d = resp.data;
+
+        document.getElementById('studentGreetingName').textContent = d.student.first_name || 'Student';
+        document.getElementById('statTotalExams').textContent = d.stats.total_exams;
+        document.getElementById('statAvgScore').textContent = d.stats.avg_score;
+        document.getElementById('statCertificates').textContent = d.stats.certificates;
+        document.getElementById('statUpcoming').textContent = d.stats.upcoming_exams;
+
+        // Render upcoming exams
+        const upcomingList = document.getElementById('upcomingExamsList');
+        if (d.upcoming_exams && d.upcoming_exams.length > 0) {
+          upcomingList.innerHTML = d.upcoming_exams.map(e => `
+            <div class="p-3 bg-light rounded-3 border d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-bold small text-dark">${e.title}</div>
+                <div class="text-muted" style="font-size:0.75rem;">
+                  <i class="bi bi-clock me-1"></i>${e.duration_minutes} mins &bull; ${Utils.formatDateTime(e.start_datetime)}
+                </div>
+              </div>
+              <a href="/exam-portal/frontend/pages/student/exam-instructions.html?id=${e.id}" class="btn btn-primary btn-sm py-1 px-2" style="font-size:0.8rem; background:#4F46E5;">
+                Start
+              </a>
+            </div>
+          `).join('');
+        } else {
+          upcomingList.innerHTML = '<div class="text-center py-4 text-muted small">No upcoming exams scheduled.</div>';
+        }
+
+        // Render Recent Results
+        const tbody = document.getElementById('recentResultsTbody');
+        if (d.recent_results && d.recent_results.length > 0) {
+          tbody.innerHTML = d.recent_results.map(r => `
+            <tr>
+              <td class="fw-semibold text-dark">${r.exam_title}</td>
+              <td><span class="badge bg-light text-dark border">${r.subject_name || 'General'}</span></td>
+              <td>${r.obtained_marks} / ${r.total_marks}</td>
+              <td><strong>${r.percentage}%</strong></td>
+              <td>${Utils.getStatusBadge(r.is_passed ? 'passed' : 'failed')}</td>
+              <td class="text-muted small">${Utils.formatDate(r.evaluated_at)}</td>
+              <td>
+                <a href="/exam-portal/frontend/pages/student/result.html?id=${r.id}" class="btn btn-outline-primary btn-sm py-1 px-2" style="font-size:0.78rem;">
+                  Analysis
+                </a>
+              </td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted small">No exam attempts recorded yet.</td></tr>';
+        }
+
+        // Render Line Chart
+        if (d.performance_data && d.performance_data.length > 0) {
+          const labels = d.performance_data.map(p => p.exam_name);
+          const data = d.performance_data.map(p => p.percentage);
+          Charts.line('performanceChart', labels, [{ label: 'Percentage Score (%)', data: data, color: '#4F46E5' }]);
+        } else {
+          Charts.line('performanceChart', ['Demo 1', 'Demo 2', 'Demo 3'], [{ label: 'Score (%)', data: [75, 82, 88], color: '#4F46E5' }]);
+        }
+
+      } catch (err) {
+        Utils.showToast(err.message || 'Failed to load dashboard data', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

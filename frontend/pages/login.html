@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — ExamPortal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/exam-portal/frontend/public/css/style.css">
+  <style>
+    body { background: #F8F7FF; min-height: 100vh; display: flex; flex-direction: column; }
+    .auth-container { max-width: 900px; margin: auto; }
+    .auth-card { border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg); border: 1px solid var(--gray-200); }
+    .auth-brand-side { background: linear-gradient(135deg, #1E1B4B 0%, #4F46E5 100%); color: white; padding: 48px; }
+  </style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <div class="container my-auto py-5">
+    <div class="auth-container">
+      <div class="row g-0 auth-card bg-white">
+        <div class="col-lg-5 d-none d-lg-flex flex-column justify-content-between auth-brand-side">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-4 fs-4 fw-bold">
+              <i class="bi bi-shield-check text-primary-light"></i>
+              <span>ExamPortal</span>
+            </div>
+            <h3 class="fw-bold mb-3">AI-Assisted Assessment Platform</h3>
+            <p class="small text-light opacity-75">
+              Secure, role-based access for students, examiners, and system administrators with OpenCV proctoring intelligence.
+            </p>
+          </div>
+          <div class="small text-light opacity-50">
+            &copy; 2026 Academic Engineering Portal
+          </div>
+        </div>
+
+        <div class="col-lg-7 p-4 p-md-5">
+          <div class="mb-4">
+            <h3 class="fw-bold text-dark mb-1">Welcome Back</h3>
+            <p class="text-muted small">Sign in with your registered institutional credentials.</p>
+          </div>
+
+          <div id="alertBox" class="alert alert-danger d-none py-2 px-3 small"></div>
+
+          <form id="loginForm" autocomplete="off">
+            <div class="mb-3">
+              <label class="form-label">Email Address</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope text-muted"></i></span>
+                <input type="email" id="email" class="form-control border-start-0" placeholder="e.g. yourname@university.edu" required autocomplete="username">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label mb-0">Password</label>
+                <a href="/exam-portal/frontend/pages/forgot-password.html" class="small text-decoration-none">Forgot?</a>
+              </div>
+              <div class="input-group mt-1">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-key text-muted"></i></span>
+                <input type="password" id="password" class="form-control border-start-0 border-end-0" placeholder="Enter your password" required autocomplete="current-password">
+                <button class="btn btn-light border border-start-0" type="button" id="togglePasswordBtn">
+                  <i class="bi bi-eye text-muted"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="mb-4 form-check">
+              <input type="checkbox" class="form-check-input" id="rememberMe">
+              <label class="form-check-label small text-muted" for="rememberMe">Remember my session</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2" id="submitBtn" style="background:#4F46E5; border-color:#4F46E5;">
+              <span id="btnSpinner" class="spinner-border spinner-border-sm d-none"></span>
+              <span>Sign In</span>
+            </button>
+          </form>
+
+          <div class="mt-4 pt-3 border-top text-center">
+            <p class="small text-muted mb-0">
+              New candidate? <a href="/exam-portal/frontend/pages/register.html" class="fw-semibold text-decoration-none">Register for an account</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/exam-portal/frontend/public/js/api.js"></script>
+  <script src="/exam-portal/frontend/public/js/auth.js"></script>
+  <script src="/exam-portal/frontend/public/js/utils.js"></script>
+  <script>
+    fetch('/exam-portal/frontend/components/navbar.html').then(r=>r.text()).then(h=>document.getElementById('nav-placeholder').innerHTML=h);
+    fetch('/exam-portal/frontend/components/footer.html').then(r=>r.text()).then(h=>document.getElementById('footer-placeholder').innerHTML=h);
+
+    // If already logged in, route to role
+    if (Auth.isLoggedIn()) {
+      Auth.redirectToRole();
+    }
+
+    // Toggle password visibility
+    document.getElementById('togglePasswordBtn').addEventListener('click', function() {
+      const pass = document.getElementById('password');
+      const icon = this.querySelector('i');
+      if (pass.type === 'password') {
+        pass.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+      } else {
+        pass.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+      }
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertBox = document.getElementById('alertBox');
+      const btnSpinner = document.getElementById('btnSpinner');
+      const submitBtn = document.getElementById('submitBtn');
+
+      alertBox.classList.add('d-none');
+      btnSpinner.classList.remove('d-none');
+      submitBtn.disabled = true;
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const resp = await ExamPortalAPI.auth.login({ email, password });
+        if (resp.success && resp.data.token) {
+          Auth.setToken(resp.data.token);
+          Auth.setUser(resp.data.user);
+
+          Utils.showToast('Login successful! Redirecting...', 'success');
+          setTimeout(() => {
+            const returnUrl = Utils.getQueryParam('return');
+            if (returnUrl) {
+              window.location.href = decodeURIComponent(returnUrl);
+            } else {
+              Auth.redirectToRole();
+            }
+          }, 600);
+        }
+      } catch (err) {
+        alertBox.textContent = err.message || 'Login failed. Please verify your credentials.';
+        alertBox.classList.remove('d-none');
+      } finally {
+        btnSpinner.classList.add('d-none');
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
